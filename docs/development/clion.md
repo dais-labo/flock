@@ -3,7 +3,7 @@
 1. **Clone the Repository**
 
     ```bash
-    git clone --recurse-submodules https://github.com/dais-polymtl/flock.git
+    git clone --recurse-submodules https://github.com/dais-labo/flock.git
     cd flock
     ```
 

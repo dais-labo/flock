@@ -1,6 +1,6 @@
 # Flock documentation
 
-This site is built with [Mintlify](https://mintlify.com) and published to [GitHub Pages](https://dais-polymtl.github.io/flock/).
+This site is built with [Mintlify](https://mintlify.com) and published to [GitHub Pages](https://dais-labo.github.io/flock/).
 
 ## Local preview
 

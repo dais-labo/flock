@@ -4,7 +4,7 @@
 # This notebook demonstrates advanced text processing of disaster-related tweets using the **FlockMTL** extension for DuckDB. The pipeline includes cleaning, feature extraction, and data visualization.
 #
 # JSON field extraction uses `llm_complete` with dot notation (requires `LOAD JSON`).
-# See https://dais-polymtl.github.io/flock/scalar-functions/llm-complete
+# See https://dais-labo.github.io/flock/scalar-functions/llm-complete
 
 # %% [markdown]
 # ## Step 1: Install and Import Libraries
@@ -24,7 +24,7 @@ from collections import Counter
 # %% [markdown]
 # ## Step 2: Download Dataset from Kaggle
 # 
-# Download and extract the disaster tweets dataset from Kaggle. Ensure you have set up your Kaggle API token. [Learn how to set up the Kaggle API token](https://github.com/dais-polymtl/flock/blob/main/notebooks/README.md).
+# Download and extract the disaster tweets dataset from Kaggle. Ensure you have set up your Kaggle API token. [Learn how to set up the Kaggle API token](https://github.com/dais-labo/flock/blob/main/notebooks/README.md).
 
 # %%
 api = KaggleApi()
