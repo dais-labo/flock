@@ -49,17 +49,17 @@ nlohmann::json CastVectorOfStructsToJson(const duckdb::Vector& struct_vector, co
 
     for (auto i = 0; i < size; i++) {
         for (auto j = 0; j < static_cast<int>(duckdb::StructType::GetChildCount(struct_vector.GetType())); j++) {
-            const auto key = duckdb::StructType::GetChildName(struct_vector.GetType(), j);
+            const auto key = duckdb::StructType::GetChildName(struct_vector.GetType(), j).GetIdentifierName();
             auto value = duckdb::StructValue::GetChildren(struct_vector.GetValue(i))[j];
             if (key == "context_columns") {
-                if (value.GetTypeMutable().id() != duckdb::LogicalTypeId::LIST) {
+                if (value.type().id() != duckdb::LogicalTypeId::LIST) {
                     throw std::runtime_error("Expected 'context_columns' to be a list.");
                 }
 
                 auto context_columns = duckdb::ListValue::GetChildren(value);
                 for (auto context_column_idx = 0; context_column_idx < static_cast<int>(context_columns.size()); context_column_idx++) {
                     const auto context_column = context_columns[context_column_idx];
-                    const auto context_column_json = CastVectorOfStructsToJson(duckdb::Vector(context_column), 1);
+                    const auto context_column_json = CastVectorOfStructsToJson(duckdb::Vector(context_column, duckdb::count_t(1)), 1);
                     const std::initializer_list<std::string_view> allowed_keys = {"name", "data", "type", "detail", "transcription_model"};
                     for (const auto& key: context_column_json.items()) {
                         if (std::find(std::begin(allowed_keys), std::end(allowed_keys), key.key()) == std::end(allowed_keys)) {
@@ -84,7 +84,7 @@ nlohmann::json CastVectorOfStructsToJson(const duckdb::Vector& struct_vector, co
                     }
                 }
             } else if (key == "batch_size" || key == "max_batch_size") {
-                if (value.GetTypeMutable() != duckdb::LogicalType::INTEGER) {
+                if (value.type() != duckdb::LogicalType::INTEGER) {
                     throw std::runtime_error("Expected '" + std::string(key) + "' to be an integer.");
                 }
                 const int batch_size = value.GetValue<int>();
@@ -93,12 +93,12 @@ nlohmann::json CastVectorOfStructsToJson(const duckdb::Vector& struct_vector, co
                 }
                 struct_json[key] = batch_size;
             } else if (key == "is_async") {
-                if (value.GetTypeMutable().id() != duckdb::LogicalTypeId::BOOLEAN) {
+                if (value.type().id() != duckdb::LogicalTypeId::BOOLEAN) {
                     throw std::runtime_error("Expected 'is_async' to be a boolean.");
                 }
                 struct_json[key] = value.GetValue<bool>();
             } else if (key == "stream") {
-                if (value.GetTypeMutable().id() != duckdb::LogicalTypeId::BOOLEAN) {
+                if (value.type().id() != duckdb::LogicalTypeId::BOOLEAN) {
                     throw std::runtime_error("Expected 'stream' to be a boolean.");
                 }
                 struct_json[key] = value.GetValue<bool>();
@@ -124,7 +124,7 @@ nlohmann::json CastValueToJson(const duckdb::Value& value) {
         auto child_count = duckdb::StructType::GetChildCount(value_type);
 
         for (idx_t i = 0; i < child_count; i++) {
-            auto key = duckdb::StructType::GetChildName(value_type, i);
+            auto key = duckdb::StructType::GetChildName(value_type, i).GetIdentifierName();
             auto& child_value = children[i];
 
             if (!child_value.IsNull()) {

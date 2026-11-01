@@ -8,7 +8,7 @@ void AggregateRegistry::RegisterLlmFirst(duckdb::ExtensionLoader& loader) {
             "llm_first", {duckdb::LogicalType::ANY, duckdb::LogicalType::ANY},
             duckdb::LogicalType::JSON(), duckdb::AggregateFunction::StateSize<AggregateFunctionState>,
             LlmFirstOrLast::Initialize, LlmFirstOrLast::Operation, LlmFirstOrLast::Combine,
-            LlmFirstOrLast::Finalize<AggregateFunctionType::FIRST>, LlmFirstOrLast::SimpleUpdate,
+            LlmFirstOrLast::Finalize<AggregateFunctionType::FIRST>, nullptr,
             LlmFirstOrLast::Bind, LlmFirstOrLast::Destroy));
 }
 
@@ -17,7 +17,7 @@ void AggregateRegistry::RegisterLlmLast(duckdb::ExtensionLoader& loader) {
             "llm_last", {duckdb::LogicalType::ANY, duckdb::LogicalType::ANY},
             duckdb::LogicalType::JSON(), duckdb::AggregateFunction::StateSize<AggregateFunctionState>,
             LlmFirstOrLast::Initialize, LlmFirstOrLast::Operation, LlmFirstOrLast::Combine,
-            LlmFirstOrLast::Finalize<AggregateFunctionType::LAST>, LlmFirstOrLast::SimpleUpdate,
+            LlmFirstOrLast::Finalize<AggregateFunctionType::LAST>, nullptr,
             LlmFirstOrLast::Bind, LlmFirstOrLast::Destroy));
 }
 

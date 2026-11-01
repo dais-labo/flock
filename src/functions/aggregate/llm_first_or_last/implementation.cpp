@@ -8,11 +8,9 @@
 
 namespace flock {
 
-duckdb::unique_ptr<duckdb::FunctionData> LlmFirstOrLast::Bind(
-        duckdb::ClientContext& context,
-        duckdb::AggregateFunction& function,
-        duckdb::vector<duckdb::unique_ptr<duckdb::Expression>>& arguments) {
-    return AggregateFunctionBase::ValidateAndInitializeBindData(context, arguments, function.name);
+duckdb::unique_ptr<duckdb::FunctionData> LlmFirstOrLast::Bind(duckdb::BindAggregateFunctionInput& input) {
+    return AggregateFunctionBase::ValidateAndInitializeBindData(input.GetClientContext(), input.GetArguments(),
+                                                                input.GetBoundFunction().GetName().GetIdentifierName());
 }
 
 int LlmFirstOrLast::GetFirstOrLastTupleId(nlohmann::json& tuples) {
@@ -149,8 +147,7 @@ nlohmann::json LlmFirstOrLast::Evaluate(nlohmann::json& tuples) {
 void LlmFirstOrLast::FinalizeResults(duckdb::Vector& states, duckdb::AggregateInputData& aggr_input_data,
                                      duckdb::Vector& result, idx_t count, idx_t offset,
                                      AggregateFunctionType function_type) {
-    const auto states_vector = reinterpret_cast<AggregateFunctionState**>(
-            duckdb::FlatVector::GetData<duckdb::data_ptr_t>(states));
+    const auto states_vector = duckdb::FlatVector::GetData<AggregateFunctionState*>(states);
 
     FunctionType metrics_function_type =
             (function_type == AggregateFunctionType::FIRST) ? FunctionType::LLM_FIRST : FunctionType::LLM_LAST;

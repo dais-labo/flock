@@ -193,8 +193,8 @@ PromptDetails PromptManager::CreatePromptDetails(const nlohmann::json& prompt_de
             if (query_result->RowCount() == 0) {
                 throw std::runtime_error(error_message);
             }
-            prompt_details.prompt = query_result->GetValue(0, 0).ToString();
-            prompt_details.version = query_result->GetValue(1, 0).GetValue<int32_t>();
+            prompt_details.prompt = query_result->Collection().GetValue(0, 0).ToString();
+            prompt_details.version = query_result->Collection().GetValue(1, 0).GetValue<int32_t>();
         } else if (prompt_details_json.contains("prompt")) {
             if (prompt_details_json.size() > 1) {
                 throw std::runtime_error("");

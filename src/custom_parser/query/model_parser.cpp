@@ -400,9 +400,7 @@ std::string ModelParser::ToSQL(const QueryStatement& statement) const {
                         "   FROM flock_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE"
                         "  WHERE model_name = '{}';",
                         create_stmt.model_name, create_stmt.model_name, create_stmt.model_name));
-
-                auto& materialized_result = result->Cast<duckdb::MaterializedQueryResult>();
-                if (materialized_result.RowCount() != 0) {
+                if (result->RowCount() != 0) {
                     throw std::runtime_error(duckdb_fmt::format("Model '{}' already exist.", create_stmt.model_name));
                 }
 
@@ -446,13 +444,11 @@ std::string ModelParser::ToSQL(const QueryStatement& statement) const {
                                            "   FROM flock_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE"
                                            "  WHERE model_name = '{}';",
                                            update_stmt.model_name, update_stmt.model_name, update_stmt.model_name));
-
-                auto& materialized_result = result->Cast<duckdb::MaterializedQueryResult>();
-                if (materialized_result.RowCount() == 0) {
+                if (result->RowCount() == 0) {
                     throw std::runtime_error(duckdb_fmt::format("Model '{}' doesn't exist.", update_stmt.model_name));
                 }
 
-                auto catalog = materialized_result.GetValue(1, 0).ToString() == "global" ? "flock_storage." : "";
+                auto catalog = result->Collection().GetValue(1, 0).ToString() == "global" ? "flock_storage." : "";
 
                 con.Query(duckdb_fmt::format(" UPDATE {}flock_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE "
                                              "    SET model = '{}', provider_name = '{}', "
@@ -472,9 +468,7 @@ std::string ModelParser::ToSQL(const QueryStatement& statement) const {
                                                            "   FROM {}flock_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE"
                                                            "  WHERE model_name = '{}';",
                                                            update_stmt.catalog, update_stmt.model_name));
-
-                auto& materialized_result = result->Cast<duckdb::MaterializedQueryResult>();
-                if (materialized_result.RowCount() != 0) {
+                if (result->RowCount() != 0) {
                     throw std::runtime_error(
                             duckdb_fmt::format("Model '{}' already exist in {} storage.", update_stmt.model_name,
                                                update_stmt.catalog == "flock_storage." ? "global" : "local"));

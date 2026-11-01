@@ -7,11 +7,8 @@
 
 namespace flock {
 
-duckdb::unique_ptr<duckdb::FunctionData> LlmComplete::Bind(
-        duckdb::ClientContext& context,
-        duckdb::ScalarFunction& bound_function,
-        duckdb::vector<duckdb::unique_ptr<duckdb::Expression>>& arguments) {
-    return ScalarFunctionBase::ValidateAndInitializeBindData(context, arguments, "llm_complete", false);
+duckdb::unique_ptr<duckdb::FunctionData> LlmComplete::Bind(duckdb::BindScalarFunctionInput& input) {
+    return ScalarFunctionBase::ValidateAndInitializeBindData(input.GetClientContext(), input.GetArguments(), "llm_complete", false);
 }
 
 
@@ -91,12 +88,12 @@ void LlmComplete::Execute(duckdb::DataChunk& args, duckdb::ExpressionState& stat
     const auto exec_start = std::chrono::high_resolution_clock::now();
 
     auto& func_expr = state.expr.Cast<duckdb::BoundFunctionExpression>();
-    auto* bind_data = &func_expr.bind_info->Cast<LlmFunctionBindData>();
+    auto* bind_data = &func_expr.BindInfo()->Cast<LlmFunctionBindData>();
 
     if (const auto results = LlmComplete::Operation(args, bind_data); static_cast<int>(results.size()) == 1) {
         if (results[0].has_value()) {
             const auto& completion = *results[0];
-            auto empty_vec = duckdb::Vector(std::string());
+            auto empty_vec = duckdb::Vector(duckdb::Value(""), duckdb::count_t(args.size()));
             duckdb::UnaryExecutor::Execute<duckdb::string_t, duckdb::string_t>(
                     empty_vec, result, args.size(),
                     [&](duckdb::string_t) { return duckdb::StringVector::AddString(result, completion); });

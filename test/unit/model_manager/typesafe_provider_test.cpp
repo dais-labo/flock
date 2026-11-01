@@ -458,7 +458,7 @@ TEST_F(LlmFilterTypeSafeTest, AiClassifyReturnsTheChoiceWithProbabilities) {
                                    "'context_columns': [{'data': t}]})) "
                                    "FROM unnest(['a']) AS tbl(t);");
     ASSERT_FALSE(results->HasError()) << results->GetError();
-    EXPECT_EQ(results->GetValue(0, 0).ToString(),
+    EXPECT_EQ(results->Collection().GetValue(0, 0).ToString(),
               "STRUCT(choice VARCHAR, confidence DOUBLE, probabilities MAP(VARCHAR, DOUBLE))");
 }
 
