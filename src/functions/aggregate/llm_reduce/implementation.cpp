@@ -7,11 +7,8 @@
 
 namespace flock {
 
-duckdb::unique_ptr<duckdb::FunctionData> LlmReduce::Bind(
-        duckdb::ClientContext& context,
-        duckdb::AggregateFunction& function,
-        duckdb::vector<duckdb::unique_ptr<duckdb::Expression>>& arguments) {
-    return AggregateFunctionBase::ValidateAndInitializeBindData(context, arguments, "llm_reduce");
+duckdb::unique_ptr<duckdb::FunctionData> LlmReduce::Bind(duckdb::BindAggregateFunctionInput& input) {
+    return AggregateFunctionBase::ValidateAndInitializeBindData(input.GetClientContext(), input.GetArguments(), "llm_reduce");
 }
 
 nlohmann::json LlmReduce::ReduceBatch(nlohmann::json& tuples,
@@ -72,8 +69,7 @@ nlohmann::json LlmReduce::ReduceLoop(const nlohmann::json& tuples,
 void LlmReduce::FinalizeResults(duckdb::Vector& states, duckdb::AggregateInputData& aggr_input_data,
                                 duckdb::Vector& result, idx_t count, idx_t offset,
                                 const AggregateFunctionType function_type) {
-    const auto states_vector = reinterpret_cast<AggregateFunctionState**>(
-            duckdb::FlatVector::GetData<duckdb::data_ptr_t>(states));
+    const auto states_vector = duckdb::FlatVector::GetData<AggregateFunctionState*>(states);
 
     // Get bind data - model_json and prompt are guaranteed to be initialized
     auto& bind_data = aggr_input_data.bind_data->Cast<LlmFunctionBindData>();

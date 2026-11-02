@@ -83,7 +83,7 @@ TEST_F(LLMEmbeddingTest, LLMEmbeddingBasicUsage) {
     ASSERT_EQ(results->RowCount(), 1);
 
     // Check that we got a list back
-    auto result_value = results->GetValue(0, 0);
+    auto result_value = results->Collection().GetValue(0, 0);
     ASSERT_EQ(result_value.type().id(), duckdb::LogicalTypeId::LIST);
 }
 
@@ -99,7 +99,7 @@ TEST_F(LLMEmbeddingTest, LLMEmbeddingWithMultipleFields) {
     ASSERT_EQ(results->RowCount(), 1);
 
     // Check that we got a list back
-    auto result_value = results->GetValue(0, 0);
+    auto result_value = results->Collection().GetValue(0, 0);
     ASSERT_EQ(result_value.type().id(), duckdb::LogicalTypeId::LIST);
 }
 
@@ -113,9 +113,9 @@ TEST_F(LLMEmbeddingTest, AllNullRowIsNotSentAndIsNull) {
     const auto results = con.Query("SELECT " + GetFunctionName() + "({'model_name': 'text-embedding-3-small'}, {'context_columns': [{'data': text}]}) AS embedding FROM unnest(['first', NULL, 'third']) as tbl(text);");
     ASSERT_TRUE(!results->HasError()) << results->GetError();
     ASSERT_EQ(results->RowCount(), 3);
-    EXPECT_EQ(duckdb::ListValue::GetChildren(results->GetValue(0, 0))[0].GetValue<double>(), 0.1);
-    EXPECT_TRUE(results->GetValue(0, 1).IsNull());
-    EXPECT_EQ(duckdb::ListValue::GetChildren(results->GetValue(0, 2))[0].GetValue<double>(), 0.3);
+    EXPECT_EQ(duckdb::ListValue::GetChildren(results->Collection().GetValue(0, 0))[0].GetValue<double>(), 0.1);
+    EXPECT_TRUE(results->Collection().GetValue(0, 1).IsNull());
+    EXPECT_EQ(duckdb::ListValue::GetChildren(results->Collection().GetValue(0, 2))[0].GetValue<double>(), 0.3);
 }
 
 TEST_F(LLMEmbeddingTest, LeavesMissingValuesOutOfTheText) {
@@ -138,8 +138,8 @@ TEST_F(LLMEmbeddingTest, OnlyNullRowsSendNothing) {
     const auto results = con.Query("SELECT " + GetFunctionName() + "({'model_name': 'text-embedding-3-small'}, {'context_columns': [{'data': text}]}) AS embedding FROM (VALUES (NULL::VARCHAR), (NULL)) as tbl(text);");
     ASSERT_TRUE(!results->HasError()) << results->GetError();
     ASSERT_EQ(results->RowCount(), 2);
-    EXPECT_TRUE(results->GetValue(0, 0).IsNull());
-    EXPECT_TRUE(results->GetValue(0, 1).IsNull());
+    EXPECT_TRUE(results->Collection().GetValue(0, 0).IsNull());
+    EXPECT_TRUE(results->Collection().GetValue(0, 1).IsNull());
 }
 
 TEST_F(LLMEmbeddingTest, ValidateArguments) {
@@ -159,8 +159,8 @@ TEST_F(LLMEmbeddingTest, Operation_BatchProcessing) {
     ASSERT_EQ(results->RowCount(), 2);
 
     // Verify both results are lists
-    auto result1 = results->GetValue(0, 0);
-    auto result2 = results->GetValue(0, 1);
+    auto result1 = results->Collection().GetValue(0, 0);
+    auto result2 = results->Collection().GetValue(0, 1);
     ASSERT_EQ(result1.type().id(), duckdb::LogicalTypeId::LIST);
     ASSERT_EQ(result2.type().id(), duckdb::LogicalTypeId::LIST);
 }
@@ -188,7 +188,7 @@ TEST_F(LLMEmbeddingTest, Operation_LargeInputSet_ProcessesCorrectly) {
 
     // Verify all results are lists
     for (size_t i = 0; i < input_count; i++) {
-        auto result = results->GetValue(0, i);
+        auto result = results->Collection().GetValue(0, i);
         ASSERT_EQ(result.type().id(), duckdb::LogicalTypeId::LIST);
     }
 }
@@ -225,8 +225,8 @@ TEST_F(LLMEmbeddingTest, Operation_DefaultBatchSizeSplitsLargeInput) {
 
     ASSERT_TRUE(!results->HasError()) << "Query failed: " << results->GetError();
     ASSERT_EQ(results->RowCount(), input_count);
-    ASSERT_EQ(results->GetValue(0, 0).type().id(), duckdb::LogicalTypeId::LIST);
-    ASSERT_EQ(results->GetValue(0, DEFAULT_MAX_BATCH_SIZE).type().id(), duckdb::LogicalTypeId::LIST);
+    ASSERT_EQ(results->Collection().GetValue(0, 0).type().id(), duckdb::LogicalTypeId::LIST);
+    ASSERT_EQ(results->Collection().GetValue(0, DEFAULT_MAX_BATCH_SIZE).type().id(), duckdb::LogicalTypeId::LIST);
 }
 
 }// namespace flock

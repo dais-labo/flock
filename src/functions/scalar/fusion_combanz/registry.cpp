@@ -5,7 +5,7 @@ namespace flock {
 
 void ScalarRegistry::RegisterFusionCombANZ(duckdb::ExtensionLoader& loader) {
     loader.RegisterFunction(duckdb::ScalarFunction("fusion_combanz", {}, duckdb::LogicalType::DOUBLE, FusionCombANZ::Execute, nullptr,
-                                                   nullptr, nullptr, nullptr, duckdb::LogicalType::ANY,
+                                                   nullptr, nullptr, duckdb::LogicalType::ANY,
                                                    duckdb::FunctionStability::VOLATILE, duckdb::FunctionNullHandling::SPECIAL_HANDLING));
 }
 

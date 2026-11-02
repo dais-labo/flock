@@ -1,5 +1,6 @@
 #pragma once
 
+#include "duckdb/common/clustered_aggregate.hpp"
 #include "flock/core/common.hpp"
 #include "flock/functions/input_parser.hpp"
 #include "flock/functions/llm_function_bind_data.hpp"
@@ -76,10 +77,11 @@ public:
 
 
     template<class Derived>
-    static void Initialize(const duckdb::AggregateFunction&, duckdb::data_ptr_t state_p) {
-        auto state = reinterpret_cast<AggregateFunctionState*>(state_p);
-        new (state) AggregateFunctionState();
-        state->Initialize();
+    static void Initialize(duckdb::AggregateStateInput&, duckdb::data_ptr_t* states, idx_t count) {
+        for (idx_t i = 0; i < count; i++) {
+            auto state = new (states[i]) AggregateFunctionState();
+            state->Initialize();
+        }
     }
 
     template<class Derived>
@@ -87,7 +89,7 @@ public:
                           duckdb::Vector& states, idx_t count) {
         auto [prompt_details, columns] = CastInputsToJson(inputs, count);
 
-        auto state_map_p = reinterpret_cast<AggregateFunctionState**>(duckdb::FlatVector::GetData<duckdb::data_ptr_t>(states));
+        auto state_map_p = duckdb::FlatVector::GetData<AggregateFunctionState*>(states);
 
         for (idx_t i = 0; i < count; i++) {
             auto state = state_map_p[i];
@@ -112,20 +114,46 @@ public:
     }
 
     template<class Derived>
-    static void SimpleUpdate(duckdb::Vector inputs[], duckdb::AggregateInputData& aggr_input_data, idx_t input_count,
-                             duckdb::data_ptr_t state_p, idx_t count) {
-        auto [prompt_details, tuples] = CastInputsToJson(inputs, count);
+    static void ClusterUpdate(duckdb::Vector inputs[], duckdb::AggregateInputData& aggr_input_data, idx_t input_count,
+                              const duckdb::ClusteredAggr& clustered, idx_t count) {
+        auto [prompt_details, columns] = CastInputsToJson(inputs, count);
 
-        if (const auto state = reinterpret_cast<AggregateFunctionState*>(state_p)) {
-            state->Update(tuples);
+        for (const auto& run: clustered.runs()) {
+            auto state = reinterpret_cast<AggregateFunctionState*>(run.state);
+            if (!state) {
+                continue;
+            }
+            // A run without a selection covers rows [0, run.count)
+            if (!run.sel && run.count == count) {
+                state->Update(columns);
+                continue;
+            }
+
+            auto run_columns = nlohmann::json::array();
+            for (const auto& column: columns) {
+                auto run_column = nlohmann::json::object();
+                for (const auto& item: column.items()) {
+                    if (item.key() == "data") {
+                        auto& data = run_column[item.key()] = nlohmann::json::array();
+                        for (idx_t k = 0; k < run.count; k++) {
+                            data.push_back(item.value()[run.sel ? run.sel[k] : k]);
+                        }
+                    } else {
+                        run_column[item.key()] = item.value();
+                    }
+                }
+                run_columns.push_back(std::move(run_column));
+            }
+            state->Update(run_columns);
         }
     }
+
 
     template<class Derived>
     static void Combine(duckdb::Vector& source, duckdb::Vector& target, duckdb::AggregateInputData& aggr_input_data,
                         const idx_t count) {
-        const auto source_vector = reinterpret_cast<AggregateFunctionState**>(duckdb::FlatVector::GetData<duckdb::data_ptr_t>(source));
-        const auto target_vector = reinterpret_cast<AggregateFunctionState**>(duckdb::FlatVector::GetData<duckdb::data_ptr_t>(target));
+        const auto source_vector = duckdb::FlatVector::GetData<AggregateFunctionState*>(source);
+        const auto target_vector = duckdb::FlatVector::GetData<AggregateFunctionState*>(target);
 
         for (auto i = 0; i < static_cast<int>(count); i++) {
             auto* source_state = source_vector[i];
@@ -141,7 +169,7 @@ public:
 
     template<class Derived>
     static void Destroy(duckdb::Vector& states, duckdb::AggregateInputData& aggr_input_data, idx_t count) {
-        auto state_vector = reinterpret_cast<AggregateFunctionState**>(duckdb::FlatVector::GetData<duckdb::data_ptr_t>(states));
+        auto state_vector = duckdb::FlatVector::GetData<AggregateFunctionState*>(states);
 
         for (idx_t i = 0; i < count; i++) {
             auto* state = state_vector[i];
@@ -151,11 +179,11 @@ public:
         }
     }
 
-    static void Finalize(duckdb::Vector& states, duckdb::AggregateInputData& aggr_input_data, duckdb::Vector& result,
+    static void Finalize(duckdb::Vector& states, duckdb::AggregateFinalizeInputData& aggr_input_data, duckdb::Vector& result,
                          idx_t count, idx_t offset);
 
     template<class Derived>
-    static void FinalizeSafe(duckdb::Vector& states, duckdb::AggregateInputData& aggr_input_data, duckdb::Vector& result,
+    static void FinalizeSafe(duckdb::Vector& states, duckdb::AggregateFinalizeInputData& aggr_input_data, duckdb::Vector& result,
                              idx_t count, idx_t offset) {
         for (idx_t i = 0; i < count; i++) {
             auto result_idx = i + offset;

@@ -47,8 +47,9 @@ private:
 
     static duckdb::unique_ptr<duckdb::KeyValueSecret> ConstructBaseSecret(duckdb::vector<std::string>& prefix_paths_p,
                                                                           const SecretDetails& details,
-                                                                          std::string& type, std::string& provider,
-                                                                          std::string& name);
+                                                                          const duckdb::Identifier& type,
+                                                                          const duckdb::Identifier& provider,
+                                                                          const duckdb::Identifier& name);
 };
 
 }// namespace flock

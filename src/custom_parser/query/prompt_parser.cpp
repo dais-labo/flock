@@ -226,9 +226,7 @@ std::string PromptParser::ToSQL(const QueryStatement& statement) const {
                                                            "   FROM flock_config.FLOCKMTL_PROMPT_INTERNAL_TABLE"
                                                            "  WHERE prompt_name = '{}';",
                                                            create_stmt.prompt_name, create_stmt.prompt_name));
-
-                auto& materialized_result = result->Cast<duckdb::MaterializedQueryResult>();
-                if (materialized_result.RowCount() != 0) {
+                if (result->RowCount() != 0) {
                     throw std::runtime_error(duckdb_fmt::format("Prompt '{}' already exist.", create_stmt.prompt_name));
                 }
 
@@ -267,14 +265,13 @@ std::string PromptParser::ToSQL(const QueryStatement& statement) const {
                                                            "  WHERE prompt_name = '{}' "
                                                            " ORDER BY version DESC;",
                                                            update_stmt.prompt_name, update_stmt.prompt_name));
-
-                auto& materialized_result = result->Cast<duckdb::MaterializedQueryResult>();
-                if (materialized_result.RowCount() == 0) {
+                if (result->RowCount() == 0) {
                     throw std::runtime_error(duckdb_fmt::format("Prompt '{}' doesn't exist.", update_stmt.prompt_name));
                 }
 
-                int version = materialized_result.GetValue<int>(0, 0) + 1;
-                auto catalog = materialized_result.GetValue(1, 0).ToString() == "global" ? "flock_storage." : "";
+                const auto rows = result->Collection().GetRows();
+                int version = rows.GetValue(0, 0).GetValue<int>() + 1;
+                auto catalog = rows.GetValue(1, 0).ToString() == "global" ? "flock_storage." : "";
 
                 con.Query(duckdb_fmt::format(" INSERT INTO {}flock_config.FLOCKMTL_PROMPT_INTERNAL_TABLE "
                                              " (prompt_name, prompt, version) "
@@ -293,9 +290,7 @@ std::string PromptParser::ToSQL(const QueryStatement& statement) const {
                                                            "   FROM {}flock_config.FLOCKMTL_PROMPT_INTERNAL_TABLE"
                                                            "  WHERE prompt_name = '{}';",
                                                            update_stmt.catalog, update_stmt.prompt_name));
-
-                auto& materialized_result = result->Cast<duckdb::MaterializedQueryResult>();
-                if (materialized_result.RowCount() != 0) {
+                if (result->RowCount() != 0) {
                     throw std::runtime_error(
                             duckdb_fmt::format("Prompt '{}' already exist in {} storage.", update_stmt.prompt_name,
                                                update_stmt.catalog == "flock_storage." ? "global" : "local"));

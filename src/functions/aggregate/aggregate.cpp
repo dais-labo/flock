@@ -1,4 +1,5 @@
 #include "flock/functions/aggregate/aggregate.hpp"
+#include "duckdb/execution/expression_executor.hpp"
 #include "flock/model_manager/model.hpp"
 #include "flock/prompt_manager/prompt_manager.hpp"
 #include <duckdb/planner/expression/bound_function_expression.hpp>
@@ -18,10 +19,10 @@ void AggregateFunctionBase::ValidateArgumentCount(
 void AggregateFunctionBase::ValidateArgumentTypes(
         const duckdb::vector<duckdb::unique_ptr<duckdb::Expression>>& arguments,
         const std::string& function_name) {
-    if (arguments[0]->return_type.id() != duckdb::LogicalTypeId::STRUCT) {
+    if (arguments[0]->GetReturnType().id() != duckdb::LogicalTypeId::STRUCT) {
         throw duckdb::BinderException(function_name + ": First argument must be model (struct type)");
     }
-    if (arguments[1]->return_type.id() != duckdb::LogicalTypeId::STRUCT) {
+    if (arguments[1]->GetReturnType().id() != duckdb::LogicalTypeId::STRUCT) {
         throw duckdb::BinderException(
                 function_name + ": Second argument must be prompt with context_columns (struct type)");
     }
@@ -32,7 +33,7 @@ AggregateFunctionBase::PromptStructInfo AggregateFunctionBase::ExtractPromptStru
     PromptStructInfo info{false, std::nullopt, ""};
 
     for (idx_t i = 0; i < duckdb::StructType::GetChildCount(prompt_type); i++) {
-        auto field_name = duckdb::StructType::GetChildName(prompt_type, i);
+        auto field_name = duckdb::StructType::GetChildName(prompt_type, i).GetIdentifierName();
         if (field_name == "context_columns") {
             info.has_context_columns = true;
         } else if (field_name == "prompt" || field_name == "prompt_name") {
@@ -76,13 +77,13 @@ void AggregateFunctionBase::InitializePrompt(
     if (prompt_expr->IsFoldable()) {
         auto prompt_value = duckdb::ExpressionExecutor::EvaluateScalar(context, *prompt_expr);
         prompt_json = CastValueToJson(prompt_value);
-    } else if (prompt_expr->expression_class == duckdb::ExpressionClass::BOUND_FUNCTION) {
+    } else if (prompt_expr->GetExpressionClass() == duckdb::ExpressionClass::BOUND_FUNCTION) {
         auto& func_expr = prompt_expr->Cast<duckdb::BoundFunctionExpression>();
-        const auto& struct_type = prompt_expr->return_type;
+        const auto& struct_type = prompt_expr->GetReturnType();
 
-        for (idx_t i = 0; i < duckdb::StructType::GetChildCount(struct_type) && i < func_expr.children.size(); i++) {
-            auto field_name = duckdb::StructType::GetChildName(struct_type, i);
-            auto& child = func_expr.children[i];
+        for (idx_t i = 0; i < duckdb::StructType::GetChildCount(struct_type) && i < func_expr.GetChildren().size(); i++) {
+            auto field_name = duckdb::StructType::GetChildName(struct_type, i).GetIdentifierName();
+            auto& child = func_expr.GetChildren()[i];
 
             if (field_name != "context_columns" && child->IsFoldable()) {
                 try {
@@ -111,7 +112,7 @@ duckdb::unique_ptr<LlmFunctionBindData> AggregateFunctionBase::ValidateAndInitia
     ValidateArgumentCount(arguments, function_name);
     ValidateArgumentTypes(arguments, function_name);
 
-    const auto& prompt_type = arguments[1]->return_type;
+    const auto& prompt_type = arguments[1]->GetReturnType();
     auto prompt_info = ExtractPromptStructInfo(prompt_type);
     ValidatePromptStructFields(prompt_info, function_name);
 

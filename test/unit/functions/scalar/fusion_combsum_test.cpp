@@ -15,11 +15,11 @@ TEST(FusionCombSUM, With2Doubles) {
     chunk.Initialize(allocator, types, 1);
 
     // Set the cardinality (number of rows) to 1
-    chunk.SetCardinality(1);
+    chunk.SetChildCardinality(1);
 
     // Populate the DataChunk with test data
-    chunk.SetValue(0, 0, 0.5);
-    chunk.SetValue(1, 0, 0.2);
+    chunk.data[0].SetValue(0, 0.5);
+    chunk.data[1].SetValue(0, 0.2);
 
     // Call FusionCombSUM with the prepared DataChunk
     const std::vector<double> result = flock::FusionCombSUM::Operation(chunk);
@@ -40,7 +40,7 @@ TEST(FusionCombSUM, With2Columns) {
     chunk.Initialize(allocator, types, 5);
 
     // Set the cardinality (number of rows) to 5
-    chunk.SetCardinality(5);
+    chunk.SetChildCardinality(5);
 
     // Data we will use to populate the DataChunk
     constexpr std::array<double, 5> bm25_scores = {0.0, 0.4, 0.6, 0.8, 1.0};
@@ -48,8 +48,8 @@ TEST(FusionCombSUM, With2Columns) {
 
     // Populate the DataChunk with test data
     for (size_t i = 0; i < bm25_scores.size(); ++i) {
-        chunk.SetValue(0, i, bm25_scores[i]);
-        chunk.SetValue(1, i, vs_scores[i]);
+        chunk.data[0].SetValue(i, bm25_scores[i]);
+        chunk.data[1].SetValue(i, vs_scores[i]);
     }
 
     // Call FusionCombSUM with the prepared DataChunk
@@ -74,7 +74,7 @@ TEST(FusionCombSUM, With3Columns) {
     chunk.Initialize(allocator, types, 5);
 
     // Set the cardinality (number of rows) to 5
-    chunk.SetCardinality(5);
+    chunk.SetChildCardinality(5);
 
     // Data we will use to populate the DataChunk
     constexpr std::array<double, 5> bm25_scores = {0.0, 0.4, 0.6, 0.8, 1.0};
@@ -83,9 +83,9 @@ TEST(FusionCombSUM, With3Columns) {
 
     // Populate the DataChunk with test data
     for (size_t i = 0; i < bm25_scores.size(); ++i) {
-        chunk.SetValue(0, i, bm25_scores[i]);
-        chunk.SetValue(1, i, vs_scores[i]);
-        chunk.SetValue(2, i, random_scores[i]);
+        chunk.data[0].SetValue(i, bm25_scores[i]);
+        chunk.data[1].SetValue(i, vs_scores[i]);
+        chunk.data[2].SetValue(i, random_scores[i]);
     }
 
     // Call FusionCombSUM with the prepared DataChunk
@@ -110,7 +110,7 @@ TEST(FusionCombSUM, WithSomeNullNaNValues) {
     chunk.Initialize(allocator, types, 5);
 
     // Set the cardinality (number of rows) to 5
-    chunk.SetCardinality(5);
+    chunk.SetChildCardinality(5);
 
     // Data we will use to populate the DataChunk. -1 means null. NaN is the result of division by 0.
     constexpr double nan = std::numeric_limits<double>::quiet_NaN();
@@ -120,15 +120,15 @@ TEST(FusionCombSUM, WithSomeNullNaNValues) {
     // Populate the DataChunk with test data
     for (size_t i = 0; i < bm25_scores.size(); ++i) {
         if (bm25_scores[i] == -1) {
-            chunk.SetValue(0, i, duckdb::Value(duckdb::LogicalType::DOUBLE));
+            chunk.data[0].SetValue(i, duckdb::Value(duckdb::LogicalType::DOUBLE));
         } else {
-            chunk.SetValue(0, i, bm25_scores[i]);
+            chunk.data[0].SetValue(i, bm25_scores[i]);
         }
 
         if (vs_scores[i] == -1) {
-            chunk.SetValue(1, i, duckdb::Value(duckdb::LogicalType::DOUBLE));
+            chunk.data[1].SetValue(i, duckdb::Value(duckdb::LogicalType::DOUBLE));
         } else {
-            chunk.SetValue(1, i, vs_scores[i]);
+            chunk.data[1].SetValue(i, vs_scores[i]);
         }
     }
 
@@ -154,15 +154,15 @@ TEST(FusionCombSUM, WithEntireNullNaNColumn) {
     chunk.Initialize(allocator, types, 5);
 
     // Set the cardinality (number of rows) to 5
-    chunk.SetCardinality(5);
+    chunk.SetChildCardinality(5);
 
     // Data we will use to populate the DataChunk
     constexpr std::array<double, 5> vs_scores = {0.046906565486452, 0.43271756518423, 0.75739696774139, 0.520761702528056, 0.58813126808257};
 
     // Populate the DataChunk with test data
     for (size_t i = 0; i < vs_scores.size(); ++i) {
-        chunk.SetValue(0, i, std::numeric_limits<double>::quiet_NaN());// Result of division by 0 in DuckDB
-        chunk.SetValue(1, i, vs_scores[i]);
+        chunk.data[0].SetValue(i, std::numeric_limits<double>::quiet_NaN());// Result of division by 0 in DuckDB
+        chunk.data[1].SetValue(i, vs_scores[i]);
     }
 
     // Call FusionCombSUM with the prepared DataChunk
@@ -187,12 +187,12 @@ TEST(FusionCombSUM, WithOnlyNullNaNValues) {
     chunk.Initialize(allocator, types, 5);
 
     // Set the cardinality (number of rows) to 5
-    chunk.SetCardinality(5);
+    chunk.SetChildCardinality(5);
 
     // Populate the DataChunk with test data
     for (size_t i = 0; i < 5; ++i) {
-        chunk.SetValue(0, i, std::numeric_limits<double>::quiet_NaN());// Result of division by 0 in DuckDB
-        chunk.SetValue(1, i, std::numeric_limits<double>::quiet_NaN());// Result of division by 0 in DuckDB
+        chunk.data[0].SetValue(i, std::numeric_limits<double>::quiet_NaN());// Result of division by 0 in DuckDB
+        chunk.data[1].SetValue(i, std::numeric_limits<double>::quiet_NaN());// Result of division by 0 in DuckDB
     }
 
     // Call FusionCombSUM with the prepared DataChunk

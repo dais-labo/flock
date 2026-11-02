@@ -6,11 +6,8 @@
 
 namespace flock {
 
-duckdb::unique_ptr<duckdb::FunctionData> LlmEmbedding::Bind(
-        duckdb::ClientContext& context,
-        duckdb::ScalarFunction& bound_function,
-        duckdb::vector<duckdb::unique_ptr<duckdb::Expression>>& arguments) {
-    return ScalarFunctionBase::ValidateAndInitializeBindData(context, arguments, "llm_embedding", true, false);
+duckdb::unique_ptr<duckdb::FunctionData> LlmEmbedding::Bind(duckdb::BindScalarFunctionInput& input) {
+    return ScalarFunctionBase::ValidateAndInitializeBindData(input.GetClientContext(), input.GetArguments(), "llm_embedding", true, false);
 }
 
 
@@ -107,7 +104,7 @@ void LlmEmbedding::Execute(duckdb::DataChunk& args, duckdb::ExpressionState& sta
     auto exec_start = std::chrono::high_resolution_clock::now();
 
     auto& func_expr = state.expr.Cast<duckdb::BoundFunctionExpression>();
-    auto* bind_data = &func_expr.bind_info->Cast<LlmFunctionBindData>();
+    auto* bind_data = &func_expr.BindInfo()->Cast<LlmFunctionBindData>();
 
     auto results = LlmEmbedding::Operation(args, bind_data);
 
