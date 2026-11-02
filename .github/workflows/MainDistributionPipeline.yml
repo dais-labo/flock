@@ -4,6 +4,8 @@
 name: Main Extension Distribution Pipeline
 on:
   pull_request:
+    # Draft PRs are skipped below; ready_for_review runs them once marked ready
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches:
       - main
@@ -25,6 +27,7 @@ concurrency:
 jobs:
   duckdb-stable-build:
     name: Build extension binaries
+    if: ${{ !github.event.pull_request.draft }}
     uses: duckdb/extension-ci-tools/.github/workflows/_extension_distribution.yml@v1.5.4
     with:
       duckdb_version: v1.5.4
@@ -33,6 +36,7 @@ jobs:
 
   code-quality-check:
     name: Code Quality Check
+    if: ${{ !github.event.pull_request.draft }}
     uses: ./.github/workflows/_extension_code_quality.yml
     with:
       duckdb_version: v1.5.4
