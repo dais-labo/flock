@@ -52,7 +52,7 @@ TEST_F(LLMFirstTest, SingleTupleNoLLMCall) {
     ASSERT_FALSE(results->HasError()) << "Query failed: " << results->GetError();
     ASSERT_EQ(results->RowCount(), 1);
 
-    nlohmann::json parsed = nlohmann::json::parse(results->GetValue(0, 0).GetValue<std::string>());
+    nlohmann::json parsed = nlohmann::json::parse(results->Collection().GetValue(0, 0).GetValue<std::string>());
     EXPECT_EQ(parsed.size(), 1);
     EXPECT_TRUE(parsed[0].contains("data"));
     EXPECT_EQ(parsed[0]["data"].size(), 1);
@@ -79,7 +79,7 @@ TEST_F(LLMFirstTest, MultipleTuplesWithoutGroupBy) {
 
     ASSERT_FALSE(results->HasError()) << "Query failed: " << results->GetError();
     ASSERT_EQ(results->RowCount(), 1);
-    ASSERT_EQ(results->GetValue(0, 0).GetValue<std::string>(), GetExpectedResponse());
+    ASSERT_EQ(results->Collection().GetValue(0, 0).GetValue<std::string>(), GetExpectedResponse());
 }
 
 TEST_F(LLMFirstTest, DefaultBatchSizeSplitsLargeInput) {
@@ -103,7 +103,7 @@ TEST_F(LLMFirstTest, DefaultBatchSizeSplitsLargeInput) {
 
     ASSERT_FALSE(results->HasError()) << "Query failed: " << results->GetError();
     ASSERT_EQ(results->RowCount(), 1);
-    nlohmann::json parsed = nlohmann::json::parse(results->GetValue(0, 0).GetValue<std::string>());
+    nlohmann::json parsed = nlohmann::json::parse(results->Collection().GetValue(0, 0).GetValue<std::string>());
     EXPECT_EQ(parsed.size(), 1);
     EXPECT_EQ(parsed[0]["data"].size(), 1);
 }
@@ -133,7 +133,7 @@ TEST_F(LLMFirstTest, GroupByWithMultipleTuplesPerGroup) {
     ASSERT_EQ(results->RowCount(), 2);
     for (idx_t i = 0; i < results->RowCount(); i++) {
         EXPECT_NO_THROW({
-            nlohmann::json parsed = nlohmann::json::parse(results->GetValue(1, i).GetValue<std::string>());
+            nlohmann::json parsed = nlohmann::json::parse(results->Collection().GetValue(1, i).GetValue<std::string>());
             EXPECT_TRUE(parsed[0].contains("data"));
         });
     }
@@ -158,7 +158,7 @@ TEST_F(LLMFirstTest, GroupByWithSingleTuplePerGroup) {
     ASSERT_EQ(results->RowCount(), 3);
     for (idx_t i = 0; i < results->RowCount(); i++) {
         EXPECT_NO_THROW({
-            nlohmann::json parsed = nlohmann::json::parse(results->GetValue(1, i).GetValue<std::string>());
+            nlohmann::json parsed = nlohmann::json::parse(results->Collection().GetValue(1, i).GetValue<std::string>());
             EXPECT_TRUE(parsed[0].contains("data"));
             EXPECT_EQ(parsed[0]["data"].size(), 1);
         });

@@ -7,10 +7,7 @@ namespace flock {
 
 class AiClassify : public ScalarFunctionBase {
 public:
-    static duckdb::unique_ptr<duckdb::FunctionData> Bind(
-            duckdb::ClientContext& context,
-            duckdb::ScalarFunction& bound_function,
-            duckdb::vector<duckdb::unique_ptr<duckdb::Expression>>& arguments);
+    static duckdb::unique_ptr<duckdb::FunctionData> Bind(duckdb::BindScalarFunctionInput& input);
     static void Execute(duckdb::DataChunk& args, duckdb::ExpressionState& state, duckdb::Vector& result);
 };
 

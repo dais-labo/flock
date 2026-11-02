@@ -57,7 +57,7 @@ TEST_F(LLMCompleteTest, LLMCompleteWithoutInputColumns) {
     auto con = Config::GetConnection();
     const auto results = con.Query("SELECT " + GetFunctionName() + "({'model_name': 'gpt-4o'},{'prompt': 'Explain the purpose of FlockMTL.'}) AS flock_purpose;");
     ASSERT_EQ(results->RowCount(), 1);
-    ASSERT_EQ(results->GetValue(0, 0).GetValue<std::string>(), GetExpectedResponse());
+    ASSERT_EQ(results->Collection().GetValue(0, 0).GetValue<std::string>(), GetExpectedResponse());
 }
 
 TEST_F(LLMCompleteTest, LLMCompleteWithInputColumns) {
@@ -70,7 +70,7 @@ TEST_F(LLMCompleteTest, LLMCompleteWithInputColumns) {
     auto con = Config::GetConnection();
     const auto results = con.Query("SELECT " + GetFunctionName() + "({'model_name': 'gpt-4o'}, {'prompt': 'What is the capital of', 'context_columns': [{'data': country}]}) AS flock_capital FROM unnest(['Canada']) as tbl(country);");
     ASSERT_EQ(results->RowCount(), 1);
-    ASSERT_EQ(results->GetValue(0, 0).GetValue<std::string>(), expected_response["items"][0]);
+    ASSERT_EQ(results->Collection().GetValue(0, 0).GetValue<std::string>(), expected_response["items"][0]);
 }
 
 TEST_F(LLMCompleteTest, NoAnswerWithoutContextIsNull) {
@@ -82,7 +82,7 @@ TEST_F(LLMCompleteTest, NoAnswerWithoutContextIsNull) {
     auto con = Config::GetConnection();
     const auto results = con.Query("SELECT " + GetFunctionName() + "({'model_name': 'gpt-4o'}, {'prompt': 'Say hi'}) AS result;");
     ASSERT_TRUE(!results->HasError()) << results->GetError();
-    EXPECT_TRUE(results->GetValue(0, 0).IsNull());
+    EXPECT_TRUE(results->Collection().GetValue(0, 0).IsNull());
 }
 
 TEST_F(LLMCompleteTest, ValidateArguments) {
@@ -106,7 +106,7 @@ TEST_F(LLMCompleteTest, Operation_TwoArguments_SimplePrompt) {
 
     ASSERT_TRUE(!results->HasError()) << "Query failed: " << results->GetError();
     ASSERT_EQ(results->RowCount(), 1);
-    EXPECT_EQ(results->GetValue(0, 0).GetValue<std::string>(), GetExpectedResponse());
+    EXPECT_EQ(results->Collection().GetValue(0, 0).GetValue<std::string>(), GetExpectedResponse());
 }
 
 TEST_F(LLMCompleteTest, Operation_ThreeArguments_BatchProcessing) {
@@ -130,7 +130,7 @@ TEST_F(LLMCompleteTest, Operation_ThreeArguments_BatchProcessing) {
     ASSERT_TRUE(!results->HasError()) << "Query failed: " << results->GetError();
     ASSERT_EQ(results->RowCount(), 3);
 
-    auto result_value = results->GetValue(0, 0).GetValue<std::string>();
+    auto result_value = results->Collection().GetValue(0, 0).GetValue<std::string>();
     EXPECT_EQ(result_value, responses[0]);
 }
 
@@ -184,7 +184,7 @@ TEST_F(LLMCompleteTest, Operation_LargeInputSet_ProcessesCorrectly) {
 
     // Verify the first few results match expected
     for (size_t i = 0; i < input_count; i++) {
-        auto result_value = results->GetValue(0, i).GetValue<std::string>();
+        auto result_value = results->Collection().GetValue(0, i).GetValue<std::string>();
         auto expected_value = expected_response["items"][i].get<std::string>();
         EXPECT_EQ(result_value, expected_value);
     }
@@ -219,7 +219,7 @@ TEST_F(LLMCompleteTest, Operation_AsyncLargeInputSet_CollectsOnceAndPreservesOrd
     ASSERT_EQ(results->RowCount(), input_count);
 
     for (size_t i = 0; i < input_count; i++) {
-        auto result_value = results->GetValue(0, i).GetValue<std::string>();
+        auto result_value = results->Collection().GetValue(0, i).GetValue<std::string>();
         auto expected_value = expected_response["items"][i].get<std::string>();
         EXPECT_EQ(result_value, expected_value);
     }
@@ -259,7 +259,7 @@ TEST_F(LLMCompleteTest, Operation_AsyncRetriesWithSmallerBatchOnTokenOverflow) {
     ASSERT_TRUE(!results->HasError()) << "Query failed: " << results->GetError();
     ASSERT_EQ(results->RowCount(), input_count);
     for (size_t i = 0; i < input_count; i++) {
-        auto result_value = results->GetValue(0, i).GetValue<std::string>();
+        auto result_value = results->Collection().GetValue(0, i).GetValue<std::string>();
         auto expected_value = expected_response["items"][i].get<std::string>();
         EXPECT_EQ(result_value, expected_value);
     }
@@ -290,9 +290,9 @@ TEST_F(LLMCompleteTest, Operation_SyncNullsRowAndContinuesAfterTokenOverflowExha
 
     ASSERT_TRUE(!results->HasError()) << "Query failed: " << results->GetError();
     ASSERT_EQ(results->RowCount(), 3);
-    EXPECT_TRUE(results->GetValue(0, 0).IsNull());
-    EXPECT_TRUE(results->GetValue(0, 1).IsNull());
-    EXPECT_EQ(results->GetValue(0, 2).GetValue<std::string>(), "response 2");
+    EXPECT_TRUE(results->Collection().GetValue(0, 0).IsNull());
+    EXPECT_TRUE(results->Collection().GetValue(0, 1).IsNull());
+    EXPECT_EQ(results->Collection().GetValue(0, 2).GetValue<std::string>(), "response 2");
 }
 
 TEST_F(LLMCompleteTest, Operation_SyncHalvesBatchAndRetriesBeforeSuccess) {
@@ -325,7 +325,7 @@ TEST_F(LLMCompleteTest, Operation_SyncHalvesBatchAndRetriesBeforeSuccess) {
     ASSERT_TRUE(!results->HasError()) << "Query failed: " << results->GetError();
     ASSERT_EQ(results->RowCount(), 4);
     for (size_t i = 0; i < 4; i++) {
-        EXPECT_EQ(results->GetValue(0, i).GetValue<std::string>(), "response " + std::to_string(i));
+        EXPECT_EQ(results->Collection().GetValue(0, i).GetValue<std::string>(), "response " + std::to_string(i));
     }
 }
 
@@ -345,8 +345,8 @@ TEST_F(LLMCompleteTest, Operation_AsyncReturnsNullWhenTokenOverflowCannotRetry) 
 
     ASSERT_TRUE(!results->HasError()) << "Query failed: " << results->GetError();
     ASSERT_EQ(results->RowCount(), 2);
-    EXPECT_TRUE(results->GetValue(0, 0).IsNull());
-    EXPECT_TRUE(results->GetValue(0, 1).IsNull());
+    EXPECT_TRUE(results->Collection().GetValue(0, 0).IsNull());
+    EXPECT_TRUE(results->Collection().GetValue(0, 1).IsNull());
 }
 
 TEST_F(LLMCompleteTest, Operation_AsyncNullsTailBatchWhenTokenOverflowCannotRetry) {
@@ -366,7 +366,7 @@ TEST_F(LLMCompleteTest, Operation_AsyncNullsTailBatchWhenTokenOverflowCannotRetr
     ASSERT_TRUE(!results->HasError()) << "Query failed: " << results->GetError();
     ASSERT_EQ(results->RowCount(), 3);
     for (size_t i = 0; i < 3; i++) {
-        EXPECT_TRUE(results->GetValue(0, i).IsNull());
+        EXPECT_TRUE(results->Collection().GetValue(0, i).IsNull());
     }
 }
 
@@ -401,7 +401,7 @@ TEST_F(LLMCompleteTest, Operation_AsyncRetriesOnlyFailedBatchesOnTokenOverflow) 
     ASSERT_TRUE(!results->HasError()) << "Query failed: " << results->GetError();
     ASSERT_EQ(results->RowCount(), 4);
     for (size_t i = 0; i < 4; i++) {
-        EXPECT_EQ(results->GetValue(0, i).GetValue<std::string>(), "response " + std::to_string(i));
+        EXPECT_EQ(results->Collection().GetValue(0, i).GetValue<std::string>(), "response " + std::to_string(i));
     }
 }
 

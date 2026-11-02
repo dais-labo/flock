@@ -199,7 +199,7 @@ TEST_F(MetricsTest, SqlFunctionFlockGetMetrics) {
     ASSERT_FALSE(results->HasError()) << results->GetError();
     ASSERT_EQ(results->RowCount(), 1);
 
-    auto json_str = results->GetValue(0, 0).GetValue<std::string>();
+    auto json_str = results->Collection().GetValue(0, 0).GetValue<std::string>();
     auto metrics = nlohmann::json::parse(json_str);
 
     EXPECT_TRUE(metrics.is_object());
@@ -323,7 +323,7 @@ TEST_F(MetricsTest, SqlFunctionFlockGetDebugMetrics) {
     ASSERT_FALSE(results->HasError()) << results->GetError();
     ASSERT_EQ(results->RowCount(), 1);
 
-    auto json_str = results->GetValue(0, 0).GetValue<std::string>();
+    auto json_str = results->Collection().GetValue(0, 0).GetValue<std::string>();
     auto debug_metrics = nlohmann::json::parse(json_str);
 
     EXPECT_TRUE(debug_metrics.is_object());

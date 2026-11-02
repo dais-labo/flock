@@ -60,7 +60,7 @@ TEST_F(LLMReduceJsonTest, LLMReduceJsonWithoutGroupBy) {
 
     ASSERT_EQ(results->RowCount(), 1);
     const auto expected_json = GetExpectedJsonResponse()["items"][0].dump();
-    ASSERT_EQ(results->GetValue(0, 0).GetValue<std::string>(), expected_json);
+    ASSERT_EQ(results->Collection().GetValue(0, 0).GetValue<std::string>(), expected_json);
 }
 
 // Test llm_reduce_json with SQL queries with GROUP BY - new API
@@ -85,9 +85,9 @@ TEST_F(LLMReduceJsonTest, LLMReduceJsonWithGroupBy) {
 
     ASSERT_EQ(results->RowCount(), 3);
     const auto expected_json = GetExpectedJsonResponse()["items"][0].dump();
-    ASSERT_EQ(results->GetValue(1, 0).GetValue<std::string>(), expected_json);
-    ASSERT_EQ(results->GetValue(1, 1).GetValue<std::string>(), expected_json);
-    ASSERT_EQ(results->GetValue(1, 2).GetValue<std::string>(), expected_json);
+    ASSERT_EQ(results->Collection().GetValue(1, 0).GetValue<std::string>(), expected_json);
+    ASSERT_EQ(results->Collection().GetValue(1, 1).GetValue<std::string>(), expected_json);
+    ASSERT_EQ(results->Collection().GetValue(1, 2).GetValue<std::string>(), expected_json);
 }
 
 // Test argument validation
@@ -124,9 +124,9 @@ TEST_F(LLMReduceJsonTest, Operation_MultipleInputs_ProcessesCorrectly) {
 
     ASSERT_EQ(results->RowCount(), 3);
     const auto expected_json = GetExpectedJsonResponse()["items"][0].dump();
-    ASSERT_EQ(results->GetValue(1, 0).GetValue<std::string>(), expected_json);
-    ASSERT_EQ(results->GetValue(1, 1).GetValue<std::string>(), expected_json);
-    ASSERT_EQ(results->GetValue(1, 2).GetValue<std::string>(), expected_json);
+    ASSERT_EQ(results->Collection().GetValue(1, 0).GetValue<std::string>(), expected_json);
+    ASSERT_EQ(results->Collection().GetValue(1, 1).GetValue<std::string>(), expected_json);
+    ASSERT_EQ(results->Collection().GetValue(1, 2).GetValue<std::string>(), expected_json);
 }
 
 // Test large input set processing with JSON output - new API
@@ -152,7 +152,7 @@ TEST_F(LLMReduceJsonTest, Operation_LargeInputSet_ProcessesCorrectly) {
     ASSERT_EQ(results->RowCount(), 100);
     for (size_t i = 0; i < input_count; i++) {
         const auto expected_json = GetExpectedJsonResponse()["items"][0].dump();
-        ASSERT_EQ(results->GetValue(1, i).GetValue<std::string>(), expected_json);
+        ASSERT_EQ(results->Collection().GetValue(1, i).GetValue<std::string>(), expected_json);
     }
 }
 
@@ -177,7 +177,7 @@ TEST_F(LLMReduceJsonTest, Operation_ValidJsonOutput_ParsesCorrectly) {
                                             "('Smart fitness tracker with heart rate monitoring') AS products(description);");
 
     ASSERT_EQ(results->RowCount(), 1);
-    const std::string result = results->GetValue(0, 0).GetValue<std::string>();
+    const std::string result = results->Collection().GetValue(0, 0).GetValue<std::string>();
 
     // Verify the result is valid JSON by parsing it
     EXPECT_NO_THROW({
@@ -219,7 +219,7 @@ TEST_F(LLMReduceJsonTest, Operation_ComplexJsonStructure_HandlesCorrectly) {
                                             "('Fitness Tracker', 'Smart fitness tracker with heart rate monitoring') AS products(name, description);");
 
     ASSERT_EQ(results->RowCount(), 1);
-    const std::string result = results->GetValue(0, 0).GetValue<std::string>();
+    const std::string result = results->Collection().GetValue(0, 0).GetValue<std::string>();
 
     // Verify the complex JSON structure is preserved
     EXPECT_NO_THROW({

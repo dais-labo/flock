@@ -59,7 +59,7 @@ TEST_F(LLMFilterTest, LLMFilterBasicUsage) {
     auto con = Config::GetConnection();
     const auto results = con.Query("SELECT " + GetFunctionName() + "({'model_name': 'gpt-4o'}, {'prompt': 'Is this sentiment positive?', 'context_columns': [{'data': text}]}) AS filter_result FROM unnest(['I love this product!']) as tbl(text);");
     ASSERT_EQ(results->RowCount(), 1);
-    ASSERT_EQ(results->GetValue(0, 0).GetValue<std::string>(), "true");
+    ASSERT_EQ(results->Collection().GetValue(0, 0).GetValue<std::string>(), "true");
 }
 
 TEST_F(LLMFilterTest, LLMFilterWithoutContextColumns) {
@@ -72,7 +72,7 @@ TEST_F(LLMFilterTest, LLMFilterWithoutContextColumns) {
     auto con = Config::GetConnection();
     const auto results = con.Query("SELECT " + GetFunctionName() + "({'model_name': 'gpt-4o'}, {'prompt': 'Are you a Robot?'}) AS filter_result;");
     ASSERT_EQ(results->RowCount(), 1);
-    ASSERT_EQ(results->GetValue(0, 0).GetValue<std::string>(), "true");
+    ASSERT_EQ(results->Collection().GetValue(0, 0).GetValue<std::string>(), "true");
 }
 
 TEST_F(LLMFilterTest, LLMFilterWithMultipleRows) {
@@ -86,7 +86,7 @@ TEST_F(LLMFilterTest, LLMFilterWithMultipleRows) {
     const auto results = con.Query("SELECT " + GetFunctionName() + "({'model_name': 'gpt-4o'}, {'prompt': 'Is this a valid email address?', 'context_columns': [{'data': email}]}) AS filter_result FROM unnest(['test@example.com', 'invalid-email', 'user@domain.org']) as tbl(email);");
     ASSERT_EQ(results->RowCount(), 3);
     // Check first result
-    ASSERT_EQ(results->GetValue(0, 0).GetValue<std::string>(), "true");
+    ASSERT_EQ(results->Collection().GetValue(0, 0).GetValue<std::string>(), "true");
 }
 
 // A row with no verdict is NULL, not true, so WHERE drops it.
@@ -101,9 +101,9 @@ TEST_F(LLMFilterTest, UnevaluatedRowBecomesSqlNull) {
     const auto results = con.Query("SELECT " + GetFunctionName() + "({'model_name': 'gpt-4o'}, {'prompt': 'Is this review positive?', 'context_columns': [{'data': review}]}) AS result FROM unnest(['Great product!', 'Meh', 'Terrible quality']) as tbl(review);");
     ASSERT_TRUE(!results->HasError()) << "Query failed: " << results->GetError();
     ASSERT_EQ(results->RowCount(), 3);
-    EXPECT_EQ(results->GetValue(0, 0).GetValue<std::string>(), "true");
-    EXPECT_TRUE(results->GetValue(0, 1).IsNull());
-    EXPECT_EQ(results->GetValue(0, 2).GetValue<std::string>(), "false");
+    EXPECT_EQ(results->Collection().GetValue(0, 0).GetValue<std::string>(), "true");
+    EXPECT_TRUE(results->Collection().GetValue(0, 1).IsNull());
+    EXPECT_EQ(results->Collection().GetValue(0, 2).GetValue<std::string>(), "false");
 }
 
 TEST_F(LLMFilterTest, AllNullRowIsNotSentAndStaysNull) {
@@ -116,9 +116,9 @@ TEST_F(LLMFilterTest, AllNullRowIsNotSentAndStaysNull) {
     const auto results = con.Query("SELECT " + GetFunctionName() + "({'model_name': 'gpt-4o'}, {'prompt': 'Is this review positive?', 'context_columns': [{'data': review}]}) AS result FROM unnest(['Great product!', NULL, 'Terrible quality']) as tbl(review);");
     ASSERT_TRUE(!results->HasError()) << "Query failed: " << results->GetError();
     ASSERT_EQ(results->RowCount(), 3);
-    EXPECT_EQ(results->GetValue(0, 0).GetValue<std::string>(), "true");
-    EXPECT_TRUE(results->GetValue(0, 1).IsNull());
-    EXPECT_EQ(results->GetValue(0, 2).GetValue<std::string>(), "false");
+    EXPECT_EQ(results->Collection().GetValue(0, 0).GetValue<std::string>(), "true");
+    EXPECT_TRUE(results->Collection().GetValue(0, 1).IsNull());
+    EXPECT_EQ(results->Collection().GetValue(0, 2).GetValue<std::string>(), "false");
 }
 
 TEST_F(LLMFilterTest, SingleAllNullRowIsNotSentAndIsNull) {
@@ -128,7 +128,7 @@ TEST_F(LLMFilterTest, SingleAllNullRowIsNotSentAndIsNull) {
     const auto results = con.Query("SELECT " + GetFunctionName() + "({'model_name': 'gpt-4o'}, {'prompt': 'Is this review positive?', 'context_columns': [{'data': review}]}) AS result FROM (VALUES (NULL::VARCHAR)) as tbl(review);");
     ASSERT_TRUE(!results->HasError()) << results->GetError();
     ASSERT_EQ(results->RowCount(), 1);
-    EXPECT_TRUE(results->GetValue(0, 0).IsNull());
+    EXPECT_TRUE(results->Collection().GetValue(0, 0).IsNull());
 }
 
 TEST_F(LLMFilterTest, ValidateArguments) {
@@ -146,7 +146,7 @@ TEST_F(LLMFilterTest, Operation_BatchProcessing) {
     const auto results = con.Query("SELECT " + GetFunctionName() + "({'model_name': 'gpt-4o'}, {'prompt': 'Is this review positive?', 'context_columns': [{'data': review}]}) AS result FROM unnest(['Great product!', 'Terrible quality']) as tbl(review);");
     ASSERT_TRUE(!results->HasError()) << "Query failed: " << results->GetError();
     ASSERT_EQ(results->RowCount(), 2);
-    EXPECT_EQ(results->GetValue(0, 0).GetValue<std::string>(), "true");
+    EXPECT_EQ(results->Collection().GetValue(0, 0).GetValue<std::string>(), "true");
 }
 
 TEST_F(LLMFilterTest, Operation_LargeInputSet_ProcessesCorrectly) {
@@ -166,7 +166,7 @@ TEST_F(LLMFilterTest, Operation_LargeInputSet_ProcessesCorrectly) {
 
     // Verify the first few results match expected
     for (size_t i = 0; i < std::min<size_t>(input_count, size_t(5)); i++) {
-        auto result_value = results->GetValue(0, i).GetValue<std::string>();
+        auto result_value = results->Collection().GetValue(0, i).GetValue<std::string>();
         auto expected_value = expected_response["items"][i].get<bool>() ? "true" : "false";
         EXPECT_EQ(result_value, expected_value);
     }
@@ -203,8 +203,8 @@ TEST_F(LLMFilterTest, Operation_DefaultBatchSizeSplitsLargeInput) {
 
     ASSERT_TRUE(!results->HasError()) << "Query failed: " << results->GetError();
     ASSERT_EQ(results->RowCount(), input_count);
-    EXPECT_EQ(results->GetValue(0, 0).GetValue<std::string>(), "true");
-    EXPECT_EQ(results->GetValue(0, DEFAULT_MAX_BATCH_SIZE).GetValue<std::string>(), "false");
+    EXPECT_EQ(results->Collection().GetValue(0, 0).GetValue<std::string>(), "true");
+    EXPECT_EQ(results->Collection().GetValue(0, DEFAULT_MAX_BATCH_SIZE).GetValue<std::string>(), "false");
 }
 
 TEST_F(LLMFilterTest, Operation_AsyncQueuesBooleanBatchesBeforeSingleCollect) {
@@ -251,7 +251,7 @@ TEST_F(LLMFilterTest, Operation_AsyncQueuesBooleanBatchesBeforeSingleCollect) {
     ASSERT_EQ(results->RowCount(), input_count);
     for (size_t i = 0; i < input_count; i++) {
         const auto expected_value = expected_results[i] ? "true" : "false";
-        EXPECT_EQ(results->GetValue(0, i).GetValue<std::string>(), expected_value);
+        EXPECT_EQ(results->Collection().GetValue(0, i).GetValue<std::string>(), expected_value);
     }
 }
 

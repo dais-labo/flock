@@ -25,7 +25,7 @@ struct DuckOperatorExtension : public OperatorExtension {
     }
 };
 
-ParserExtensionParseResult duck_parse(ParserExtensionInfo*, const std::string& query);
+ParserExtensionParseResult duck_parse(ParserExtensionInfo*, const vector<SimpleToken>& tokens);
 
 ParserExtensionPlanResult duck_plan(ParserExtensionInfo*, ClientContext&, unique_ptr<ParserExtensionParseData>);
 

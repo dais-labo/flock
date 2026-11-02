@@ -14,11 +14,11 @@ TEST(FusionRRF, With2Doubles) {
     chunk.Initialize(allocator, types, 1);
 
     // Set the cardinality (number of rows) to 1
-    chunk.SetCardinality(1);
+    chunk.SetChildCardinality(1);
 
     // Populate the DataChunk with test data
-    chunk.SetValue(0, 0, 1.0);
-    chunk.SetValue(1, 0, 1.0);
+    chunk.data[0].SetValue(0, 1.0);
+    chunk.data[1].SetValue(0, 1.0);
 
     // Call FusionRRF with the prepared DataChunk
     const std::vector<double> result = flock::FusionRRF::Operation(chunk);
@@ -39,7 +39,7 @@ TEST(FusionRRF, With2Columns) {
     chunk.Initialize(allocator, types, 5);
 
     // Set the cardinality (number of rows) to 5
-    chunk.SetCardinality(5);
+    chunk.SetChildCardinality(5);
 
     // Data we will use to populate the DataChunk
     constexpr std::array<int32_t, 5> bm25_scores = {1, 2, 3, 4, 5};
@@ -47,8 +47,8 @@ TEST(FusionRRF, With2Columns) {
 
     // Populate the DataChunk with test data
     for (size_t i = 0; i < bm25_scores.size(); ++i) {
-        chunk.SetValue(0, i, bm25_scores[i]);
-        chunk.SetValue(1, i, vs_scores[i]);
+        chunk.data[0].SetValue(i, bm25_scores[i]);
+        chunk.data[1].SetValue(i, vs_scores[i]);
     }
 
     // Call FusionRRF with the prepared DataChunk
@@ -75,7 +75,7 @@ TEST(FusionRRF, With3Columns) {
     chunk.Initialize(allocator, types, 5);
 
     // Set the cardinality (number of rows) to 5
-    chunk.SetCardinality(5);
+    chunk.SetChildCardinality(5);
 
     // Data we will use to populate the DataChunk
     constexpr std::array<int32_t, 5> bm25_scores = {1, 2, 3, 4, 5};
@@ -84,9 +84,9 @@ TEST(FusionRRF, With3Columns) {
 
     // Populate the DataChunk with test data
     for (size_t i = 0; i < bm25_scores.size(); ++i) {
-        chunk.SetValue(0, i, bm25_scores[i]);
-        chunk.SetValue(1, i, vs_scores[i]);
-        chunk.SetValue(2, i, random_scores[i]);
+        chunk.data[0].SetValue(i, bm25_scores[i]);
+        chunk.data[1].SetValue(i, vs_scores[i]);
+        chunk.data[2].SetValue(i, random_scores[i]);
     }
 
     // Call FusionRRF with the prepared DataChunk
@@ -117,15 +117,15 @@ TEST(FusionRRF, WithEntireColumnOfFirstPlaceRanking) {
     chunk.Initialize(allocator, types, 5);
 
     // Set the cardinality (number of rows) to 5
-    chunk.SetCardinality(5);
+    chunk.SetChildCardinality(5);
 
     // Data we will use to populate the DataChunk
     constexpr std::array<int32_t, 5> vs_scores = {3, 1, 5, 2, 4};
 
     // Populate the DataChunk with test data
     for (size_t i = 0; i < vs_scores.size(); ++i) {
-        chunk.SetValue(0, i, 1);
-        chunk.SetValue(1, i, vs_scores[i]);
+        chunk.data[0].SetValue(i, 1);
+        chunk.data[1].SetValue(i, vs_scores[i]);
     }
 
     // Call FusionRRF with the prepared DataChunk

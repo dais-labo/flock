@@ -54,7 +54,7 @@ TEST_F(LLMCompleteJsonTest, LLMCompleteJsonBasicUsage) {
     auto con = Config::GetConnection();
     const auto results = con.Query("SELECT " + GetFunctionName() + "({'model_name': 'gpt-4o'}, {'prompt': 'Explain the purpose of FlockMTL.'}) AS flock_purpose;");
     ASSERT_EQ(results->RowCount(), 1);
-    ASSERT_EQ(results->GetValue(0, 0).GetValue<std::string>(), expected_response["items"][0].dump());
+    ASSERT_EQ(results->Collection().GetValue(0, 0).GetValue<std::string>(), expected_response["items"][0].dump());
 }
 
 TEST_F(LLMCompleteJsonTest, LLMCompleteJsonWithInputColumns) {
@@ -68,7 +68,7 @@ TEST_F(LLMCompleteJsonTest, LLMCompleteJsonWithInputColumns) {
     const auto results = con.Query("SELECT " + GetFunctionName() + "({'model_name': 'gpt-4o'}, {'prompt': 'What is the capital of', 'context_columns': [{'data': country}]}) AS flock_capital FROM unnest(['Canada']) as tbl(country);");
     ASSERT_EQ(results->RowCount(), 1);
     auto expected_json = expected_response["items"][0];
-    ASSERT_EQ(results->GetValue(0, 0).GetValue<std::string>(), expected_json.dump());
+    ASSERT_EQ(results->Collection().GetValue(0, 0).GetValue<std::string>(), expected_json.dump());
 }
 
 TEST_F(LLMCompleteJsonTest, ValidateArguments) {
@@ -87,7 +87,7 @@ TEST_F(LLMCompleteJsonTest, Operation_BatchProcessing) {
     ASSERT_TRUE(!results->HasError()) << "Query failed: " << results->GetError();
     ASSERT_EQ(results->RowCount(), 2);
 
-    auto result_value = results->GetValue(0, 0).GetValue<std::string>();
+    auto result_value = results->Collection().GetValue(0, 0).GetValue<std::string>();
     EXPECT_EQ(result_value, expected_response["items"][0].dump());
 }
 

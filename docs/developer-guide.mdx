@@ -5,7 +5,7 @@ title: "Developer Guide"
 This guide is for developers who want to build, extend, or contribute to Flock itself.
 
 <Note>
-Flock CI builds against DuckDB **v1.5.4**. User-facing docs require DuckDB **1.5.0+**.
+Flock CI builds against DuckDB **v2.0.0**. User-facing docs require DuckDB **2.0.0+**.
 </Note>
 
 ## Local Development Setup
@@ -13,7 +13,7 @@ Flock CI builds against DuckDB **v1.5.4**. User-facing docs require DuckDB **1.5
 - **Clone the repository**:
 
 ```bash
-git clone --recursive https://github.com/dais-polymtl/flock.git
+git clone --recursive https://github.com/dais-labo/flock.git
 cd flock
 ```
 
@@ -38,7 +38,7 @@ The interactive script will:
 
 See the root `README.md` for a concise overview of these steps.
 
-For a CLion-specific walkthrough (open the DuckDB CMake project, vcpkg, and run configs), see [`docs/development/clion.md`](https://github.com/dais-polymtl/flock/blob/main/docs/development/clion.md) in the repository. That guide is not part of this docs site.
+For a CLion-specific walkthrough (open the DuckDB CMake project, vcpkg, and run configs), see [`docs/development/clion.md`](https://github.com/dais-labo/flock/blob/main/docs/development/clion.md) in the repository. That guide is not part of this docs site.
 
 ## Building the Extension Manually
 
@@ -146,7 +146,7 @@ This script:
 1. `mint export` → static HTML
 2. `prepare-github-pages.mjs` → rewrites paths for `/flock` and injects the Pagefind search bridge
 3. `pagefind` → builds the client-side search index
-4. Serves the result with the same layout as [GitHub Pages](https://dais-polymtl.github.io/flock/)
+4. Serves the result with the same layout as [GitHub Pages](https://dais-labo.github.io/flock/)
 
 Optional environment variables: `PORT` (default `3000`), `GITHUB_PAGES_BASE_PATH` (default `/flock`), `SITE_DIR`, `SITE_ZIP`, `DOCS_TMPDIR`. If `mint export` fails with `ENOSPC`, set `DOCS_TMPDIR=/tmp`.
 

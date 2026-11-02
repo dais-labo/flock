@@ -96,12 +96,12 @@
     "primary": {
       "type": "button",
       "label": "GitHub",
-      "href": "https://github.com/dais-polymtl/flock"
+      "href": "https://github.com/dais-labo/flock"
     }
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/dais-polymtl/flock"
+      "github": "https://github.com/dais-labo/flock"
     }
   },
   "contextual": {

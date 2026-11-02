@@ -7,3 +7,5 @@ duckdb_extension_load(json)
 
 # Extension from this repo
 duckdb_extension_load(flock SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR} LOAD_TESTS)
+# Load order: flock's startup tables need the JSON type and CURRENT_TIMESTAMP
+duckdb_extension_statically_link(core_functions json flock)

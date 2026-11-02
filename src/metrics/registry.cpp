@@ -9,7 +9,7 @@ void ScalarRegistry::RegisterFlockGetMetrics(duckdb::ExtensionLoader& loader) {
             {},
             duckdb::LogicalType::JSON(),
             MetricsManager::ExecuteGetMetrics);
-    function.stability = duckdb::FunctionStability::VOLATILE;
+    function.SetStability(duckdb::FunctionStability::VOLATILE);
     loader.RegisterFunction(function);
 }
 
@@ -19,7 +19,7 @@ void ScalarRegistry::RegisterFlockGetDebugMetrics(duckdb::ExtensionLoader& loade
             {},
             duckdb::LogicalType::JSON(),
             MetricsManager::ExecuteGetDebugMetrics);
-    function.stability = duckdb::FunctionStability::VOLATILE;
+    function.SetStability(duckdb::FunctionStability::VOLATILE);
     loader.RegisterFunction(function);
 }
 
@@ -29,7 +29,7 @@ void ScalarRegistry::RegisterFlockResetMetrics(duckdb::ExtensionLoader& loader) 
             {},
             duckdb::LogicalType::VARCHAR,
             MetricsManager::ExecuteResetMetrics);
-    function.stability = duckdb::FunctionStability::VOLATILE;
+    function.SetStability(duckdb::FunctionStability::VOLATILE);
     loader.RegisterFunction(function);
 }
 

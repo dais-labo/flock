@@ -3,7 +3,7 @@
 <br />
 
 <div align="center">
-  <a href="https://github.com/dais-polymtl/flock/tree/main/docs">
+  <a href="https://github.com/dais-labo/flock/tree/main/docs">
     <img src="docs/static/flock-square-readme.png" alt="Logo" height="300">
   </a>
   <br /><br />
@@ -15,9 +15,9 @@
     <br />
     <a href="./docs/index.mdx">Landing Page</a>
     |
-    <a href="https://github.com/dais-polymtl/flock/issues/new?labels=bug&template=bug-report.md">Report Bug</a>
+    <a href="https://github.com/dais-labo/flock/issues/new?labels=bug&template=bug-report.md">Report Bug</a>
     |
-    <a href="https://github.com/dais-polymtl/flock/issues/new?labels=enhancement&template=feature-request.md">Request Feature</a>
+    <a href="https://github.com/dais-labo/flock/issues/new?labels=enhancement&template=feature-request.md">Request Feature</a>
   </p>
 </div>
 
@@ -80,7 +80,7 @@ To cite the project:
 - **WASM Support**: Compile Flock as a DuckDB-WASM loadable extension to run in the browser, enabling client-side analytics and demos without server infrastructure.
 - **LLM Metrics Tracking**: Track token usage, API latency, and execution time through dedicated functions like `flock_get_metrics()` for better cost and performance monitoring.
 - **Audio Transcription**: Send audio inputs to OpenAI or Azure and obtain text transcripts using the same `context_columns` abstraction (with `type: 'audio'`).
-- **DuckDB v1.5.0**: Upgraded to DuckDB **1.5.0**, inheriting the latest performance and stability improvements.
+- **DuckDB v2.0.0**: Upgraded to DuckDB **2.0.0**, inheriting the latest performance and stability improvements.
 - **Architecture Improvements**: Centralized bind data and RAII-based storage guards reduce duplication and improve robustness across scalar and aggregate functions.
 - **Developer Experience**: Interactive build scripts, improved extension CI tooling, and GitHub Copilot agent instructions streamline local development and contributions.
 
@@ -90,7 +90,7 @@ To cite the project:
 
 ### 📝 Prerequisites
 
-1. **DuckDB**: Version **1.5.0 or later**. Install it from the official [DuckDB installation guide](https://duckdb.org/docs/installation/).
+1. **DuckDB**: Version **2.0.0 or later**. Install it from the official [DuckDB installation guide](https://duckdb.org/docs/installation/).
 2. **Supported Providers**: Ensure you have credentials or API keys for at least one of the supported providers:
    - OpenAI
    - Azure
@@ -128,7 +128,7 @@ If you want to build Flock from source or contribute to the project, you can use
 1. Clone the repository with submodules:
 
    ```bash
-   git clone --recursive https://github.com/dais-polymtl/flock.git
+   git clone --recursive https://github.com/dais-labo/flock.git
    cd flock
    ```
 
@@ -187,7 +187,7 @@ If you are a contributor or want to work on Flock itself, see the dedicated
 
 ## 🛣️ Roadmap
 
-Our roadmap outlines upcoming features and improvements. Stay updated by checking out our [detailed plan](https://github.com/dais-polymtl/flock/issues/39).
+Our roadmap outlines upcoming features and improvements. Stay updated by checking out our [detailed plan](https://github.com/dais-labo/flock/issues/39).
 
 <p align="right"><a href="#readme-top">🔝 back to top</a></p>
 
@@ -195,8 +195,8 @@ Our roadmap outlines upcoming features and improvements. Stay updated by checkin
 
 We value your feedback! If you’d like to report an issue or suggest a new feature, please use the links below:
 
-- <a href="https://github.com/dais-polymtl/flock/issues/new?labels=bug&template=bug-report.md">Report a Bug</a>
-- <a href="https://github.com/dais-polymtl/flock/issues/new?labels=enhancement&template=feature-request.md">Request a Feature</a>
+- <a href="https://github.com/dais-labo/flock/issues/new?labels=bug&template=bug-report.md">Report a Bug</a>
+- <a href="https://github.com/dais-labo/flock/issues/new?labels=enhancement&template=feature-request.md">Request a Feature</a>
 
 For contributing code or other contributions, please refer to our dedicated [Contribution Guidelines](#).
 
@@ -210,6 +210,6 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## ✨ Team
 
-This project is under active development by the [**Data & AI Systems Laboratory (DAIS Lab)**](https://github.com/dais-polymtl) at **Polytechnique Montréal**.
+This project is under active development by the [**Data & AI Systems Laboratory (DAIS Lab)**](https://github.com/dais-labo) at **Polytechnique Montréal**.
 
 <p align="right"><a href="#readme-top">🔝 back to top</a></p>

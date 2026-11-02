@@ -53,7 +53,7 @@ void SecretManager::Register(duckdb::ExtensionLoader& loader) {
 void SecretManager::RegisterSecretType(duckdb::ExtensionLoader& loader) {
     for (const auto& secret_detail: get_secret_details_list()) {
         duckdb::SecretType secret_type;
-        secret_type.name = secret_detail.type;
+        secret_type.name = duckdb::Identifier(secret_detail.type);
         secret_type.deserializer = duckdb::KeyValueSecret::Deserialize<duckdb::KeyValueSecret>;
         secret_type.default_provider = secret_detail.provider;
 
@@ -63,10 +63,11 @@ void SecretManager::RegisterSecretType(duckdb::ExtensionLoader& loader) {
 
 void SecretManager::RegisterSecretFunction(duckdb::ExtensionLoader& loader) {
     for (const auto& secret_details: get_secret_details_list()) {
-        duckdb::CreateSecretFunction secret_function = {secret_details.type, secret_details.provider, CreateSecret};
+        duckdb::CreateSecretFunction secret_function = {secret_details.type, duckdb::Identifier(secret_details.provider),
+                                                        CreateSecret};
 
         for (const auto& field: secret_details.fields) {
-            secret_function.named_parameters[field] = duckdb::LogicalType::VARCHAR;
+            secret_function.named_parameters[duckdb::Identifier(field)] = duckdb::LogicalType::VARCHAR;
         }
 
         loader.RegisterFunction(secret_function);
@@ -77,15 +78,15 @@ duckdb::unique_ptr<duckdb::BaseSecret> SecretManager::CreateSecret(duckdb::Clien
                                                                    duckdb::CreateSecretInput& input) {
     SecretDetails selected_details;
 
-    if (GetProviderType(input.type) == SupportedProviders::OPENAI) {
+    if (GetProviderType(input.type.GetIdentifierName()) == SupportedProviders::OPENAI) {
         selected_details = get_openai_secret_details();
-    } else if (GetProviderType(input.type) == SupportedProviders::AZURE) {
+    } else if (GetProviderType(input.type.GetIdentifierName()) == SupportedProviders::AZURE) {
         selected_details = get_azure_secret_details();
-    } else if (GetProviderType(input.type) == SupportedProviders::OLLAMA) {
+    } else if (GetProviderType(input.type.GetIdentifierName()) == SupportedProviders::OLLAMA) {
         selected_details = get_ollama_secret_details();
-    } else if (GetProviderType(input.type) == SupportedProviders::ANTHROPIC) {
+    } else if (GetProviderType(input.type.GetIdentifierName()) == SupportedProviders::ANTHROPIC) {
         selected_details = get_anthropic_secret_details();
-    } else if (GetProviderType(input.type) == SupportedProviders::TYPESAFE) {
+    } else if (GetProviderType(input.type.GetIdentifierName()) == SupportedProviders::TYPESAFE) {
         selected_details = get_typesafe_secret_details();
     } else {
         throw duckdb::InvalidInputException("Unsupported secret type: %s", input.type.c_str());
@@ -102,7 +103,7 @@ duckdb::unique_ptr<duckdb::BaseSecret> SecretManager::CreateSecret(duckdb::Clien
 
     for (const auto& field: selected_details.fields) {
         if (auto lookup = input.options.find(field); lookup != input.options.end()) {
-            secret->secret_map[field] = lookup->second;
+            secret->secret_map[duckdb::Identifier(field)] = lookup->second;
         }
     }
 
@@ -111,10 +112,12 @@ duckdb::unique_ptr<duckdb::BaseSecret> SecretManager::CreateSecret(duckdb::Clien
 
 duckdb::unique_ptr<duckdb::KeyValueSecret>
 SecretManager::ConstructBaseSecret(duckdb::vector<std::string>& prefix_paths_p, const SecretDetails& details,
-                                   std::string& type, std::string& provider, std::string& name) {
+                                   const duckdb::Identifier& type, const duckdb::Identifier& provider,
+                                   const duckdb::Identifier& name) {
     auto secret = duckdb::make_uniq<duckdb::KeyValueSecret>(prefix_paths_p, type, provider, name);
-    duckdb::case_insensitive_set_t redact_fields_set(details.redact_fields.begin(), details.redact_fields.end());
-    secret->redact_keys = std::move(redact_fields_set);
+    for (const auto& field: details.redact_fields) {
+        secret->redact_keys.insert(duckdb::Identifier(field));
+    }
     return secret;
 }
 
@@ -130,7 +133,7 @@ std::unordered_map<std::string, std::string> SecretManager::GetSecret(const std:
     }
     const auto kv_secret = dynamic_cast<const duckdb::KeyValueSecret&>(*secret->secret);
 
-    auto provider = secret->secret->GetType();
+    auto provider = secret->secret->GetType().GetIdentifierName();
     auto providerType = SecretManager::GetProviderType(provider);
     SecretDetails secret_details;
     switch (providerType) {
@@ -154,7 +157,7 @@ std::unordered_map<std::string, std::string> SecretManager::GetSecret(const std:
     }
 
     for (const auto& field: secret_details.fields) {
-        if (auto value = kv_secret.TryGetValue(field); !value.IsNull()) {
+        if (auto value = kv_secret.TryGetValue(duckdb::Identifier(field)); !value.IsNull()) {
             secret_map[field] = value.ToString();
         }
     }

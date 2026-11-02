@@ -1,6 +1,5 @@
 #include "flock/custom_parser/query_parser.hpp"
 
-#include "duckdb/main/materialized_query_result.hpp"
 #include "flock/core/common.hpp"
 #include "flock/core/config.hpp"
 
@@ -34,10 +33,7 @@ std::string FormatResultsAsValues(duckdb::unique_ptr<duckdb::QueryResult> result
         return "SELECT * FROM (VALUES (NULL)) AS empty_result WHERE FALSE";
     }
 
-    // Cast to MaterializedQueryResult to access GetValue and RowCount
-    auto& materialized_result = result->Cast<duckdb::MaterializedQueryResult>();
-
-    if (materialized_result.RowCount() == 0) {
+    if (result->RowCount() == 0) {
         return "SELECT * FROM (VALUES (NULL)) AS empty_result WHERE FALSE";
     }
 
@@ -48,23 +44,26 @@ std::string FormatResultsAsValues(duckdb::unique_ptr<duckdb::QueryResult> result
     std::vector<std::string> column_names;
     column_names.reserve(column_count);
     for (idx_t col = 0; col < column_count; col++) {
-        column_names.push_back(result->ColumnName(col));
+        column_names.push_back(result->ColumnName(col).GetIdentifierName());
     }
 
-    // Format each row as VALUES tuple
-    for (idx_t row = 0; row < materialized_result.RowCount(); row++) {
-        if (row > 0) {
-            values_stream << ", ";
-        }
-        values_stream << "(";
-        for (idx_t col = 0; col < column_count; col++) {
-            if (col > 0) {
+    // Format each row as VALUES tuple; iterate chunks since Collection().GetValue rescans all rows
+    bool first_row = true;
+    for (auto& chunk: result->Collection().Chunks()) {
+        for (idx_t row = 0; row < chunk.size(); row++) {
+            if (!first_row) {
                 values_stream << ", ";
             }
-            auto value = materialized_result.GetValue(col, row);
-            values_stream << FormatValueForSQL(value);
+            first_row = false;
+            values_stream << "(";
+            for (idx_t col = 0; col < column_count; col++) {
+                if (col > 0) {
+                    values_stream << ", ";
+                }
+                values_stream << FormatValueForSQL(chunk.data[col].GetValue(row));
+            }
+            values_stream << ")";
         }
-        values_stream << ")";
     }
 
     // Build column names for the VALUES clause

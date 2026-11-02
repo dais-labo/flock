@@ -6,11 +6,8 @@
 
 namespace flock {
 
-duckdb::unique_ptr<duckdb::FunctionData> AiClassify::Bind(
-        duckdb::ClientContext& context,
-        duckdb::ScalarFunction& bound_function,
-        duckdb::vector<duckdb::unique_ptr<duckdb::Expression>>& arguments) {
-    return ScalarFunctionBase::ValidateAndInitializeBindData(context, arguments, "ai_classify", true);
+duckdb::unique_ptr<duckdb::FunctionData> AiClassify::Bind(duckdb::BindScalarFunctionInput& input) {
+    return ScalarFunctionBase::ValidateAndInitializeBindData(input.GetClientContext(), input.GetArguments(), "ai_classify", true);
 }
 
 void AiClassify::Execute(duckdb::DataChunk& args, duckdb::ExpressionState& state, duckdb::Vector& result) {
@@ -18,7 +15,7 @@ void AiClassify::Execute(duckdb::DataChunk& args, duckdb::ExpressionState& state
     auto exec_start = std::chrono::high_resolution_clock::now();
 
     auto& func_expr = state.expr.Cast<duckdb::BoundFunctionExpression>();
-    auto* bind_data = &func_expr.bind_info->Cast<LlmFunctionBindData>();
+    auto* bind_data = &func_expr.BindInfo()->Cast<LlmFunctionBindData>();
     Model model = bind_data->CreateModel();
     auto model_details = model.GetModelDetails();
     MetricsManager::SetModelInfo(model_details.model_name, model_details.provider_name);
