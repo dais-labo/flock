@@ -14,7 +14,7 @@
 # - Visualize insights for better understanding
 #
 # JSON outputs use `llm_complete` with prompts that specify JSON shape.
-# For schema-enforced responses, see https://dais-polymtl.github.io/flock/scalar-functions/llm-complete
+# For schema-enforced responses, see https://dais-labo.github.io/flock/scalar-functions/llm-complete
 
 # %% [markdown]
 # ## Step 1: Install Required Libraries
@@ -32,7 +32,7 @@ print(f"DuckDB version: {duckdb.__version__}")
 # %% [markdown]
 # ## Step 2: Download Kaggle Dataset
 # We will download the dataset from Kaggle and load it into our DuckDB database.
-# Ensure you have set up your Kaggle API token [check here](https://github.com/dais-polymtl/flock/blob/main/notebooks/README.md) for more details.
+# Ensure you have set up your Kaggle API token [check here](https://github.com/dais-labo/flock/blob/main/notebooks/README.md) for more details.
 
 # %%
 %pip install kaggle

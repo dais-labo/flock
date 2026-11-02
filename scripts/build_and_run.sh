@@ -361,7 +361,7 @@ echo -e "${BOLD}${YELLOW}━━━━━━━━━━━━━━━━━━�
 echo -e "${BOLD}${CYAN}📚 IMPORTANT: Learn how to use Flock before running DuckDB${RESET}"
 echo ""
 echo -e "${BOLD}${GREEN}Documentation:${RESET}"
-echo -e "  ${BOLD}${CYAN}https://dais-polymtl.github.io/flock/docs/what-is-flock${RESET}"
+echo -e "  ${BOLD}${CYAN}https://dais-labo.github.io/flock/docs/what-is-flock${RESET}"
 echo ""
 echo -e "${BOLD}The documentation covers:${RESET}"
 echo "  • Semantic functions (llm_complete, llm_filter, llm_embedding, etc.)"
