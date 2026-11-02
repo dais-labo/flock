@@ -1,0 +1,18 @@
+# name: test/sql/flock.test
+# description: flock loads, its DDL parses, and its functions bind without a provider
+# group: [sql]
+
+require flock
+
+statement ok
+CREATE LOCAL PROMPT('ci_prompt', 'hello');
+
+statement error
+CREATE PROMPTT('ci_prompt', 'hello');
+----
+Unknown keyword: PROMPTT
+
+statement error
+SELECT llm_complete({'model_name': 'missing_model'}, {'prompt': 'x'});
+----
+Model not found
