@@ -188,9 +188,10 @@ std::tuple<std::string, std::string, nlohmann::basic_json<>> Model::GetQueriedMo
         }
     }
 
-    auto model = query_result->Collection().GetValue(0, 0).ToString();
-    auto provider_name = query_result->Collection().GetValue(1, 0).ToString();
-    auto model_args = nlohmann::json::parse(query_result->Collection().GetValue(2, 0).ToString());
+    const auto rows = query_result->Collection().GetRows();
+    auto model = rows.GetValue(0, 0).ToString();
+    auto provider_name = rows.GetValue(1, 0).ToString();
+    auto model_args = nlohmann::json::parse(rows.GetValue(2, 0).ToString());
     NormalizeStoredModelArgs(model_args);
 
     return {model, provider_name, model_args};

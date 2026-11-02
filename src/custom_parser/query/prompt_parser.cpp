@@ -269,8 +269,9 @@ std::string PromptParser::ToSQL(const QueryStatement& statement) const {
                     throw std::runtime_error(duckdb_fmt::format("Prompt '{}' doesn't exist.", update_stmt.prompt_name));
                 }
 
-                int version = result->Collection().GetValue(0, 0).GetValue<int>() + 1;
-                auto catalog = result->Collection().GetValue(1, 0).ToString() == "global" ? "flock_storage." : "";
+                const auto rows = result->Collection().GetRows();
+                int version = rows.GetValue(0, 0).GetValue<int>() + 1;
+                auto catalog = rows.GetValue(1, 0).ToString() == "global" ? "flock_storage." : "";
 
                 con.Query(duckdb_fmt::format(" INSERT INTO {}flock_config.FLOCKMTL_PROMPT_INTERNAL_TABLE "
                                              " (prompt_name, prompt, version) "

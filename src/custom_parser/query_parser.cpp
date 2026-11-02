@@ -47,20 +47,23 @@ std::string FormatResultsAsValues(duckdb::unique_ptr<duckdb::QueryResult> result
         column_names.push_back(result->ColumnName(col).GetIdentifierName());
     }
 
-    // Format each row as VALUES tuple
-    for (idx_t row = 0; row < result->RowCount(); row++) {
-        if (row > 0) {
-            values_stream << ", ";
-        }
-        values_stream << "(";
-        for (idx_t col = 0; col < column_count; col++) {
-            if (col > 0) {
+    // Format each row as VALUES tuple; iterate chunks since Collection().GetValue rescans all rows
+    bool first_row = true;
+    for (auto& chunk: result->Collection().Chunks()) {
+        for (idx_t row = 0; row < chunk.size(); row++) {
+            if (!first_row) {
                 values_stream << ", ";
             }
-            auto value = result->Collection().GetValue(col, row);
-            values_stream << FormatValueForSQL(value);
+            first_row = false;
+            values_stream << "(";
+            for (idx_t col = 0; col < column_count; col++) {
+                if (col > 0) {
+                    values_stream << ", ";
+                }
+                values_stream << FormatValueForSQL(chunk.data[col].GetValue(row));
+            }
+            values_stream << ")";
         }
-        values_stream << ")";
     }
 
     // Build column names for the VALUES clause
