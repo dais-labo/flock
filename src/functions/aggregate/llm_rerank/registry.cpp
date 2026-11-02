@@ -7,7 +7,7 @@ void AggregateRegistry::RegisterLlmRerank(duckdb::ExtensionLoader& loader) {
     loader.RegisterFunction(duckdb::AggregateFunction(
             "llm_rerank", {duckdb::LogicalType::ANY, duckdb::LogicalType::ANY},
             duckdb::LogicalType::JSON(), duckdb::AggregateFunction::StateSize<AggregateFunctionState>,
-            LlmRerank::Initialize, LlmRerank::Operation, LlmRerank::Combine, LlmRerank::Finalize, nullptr,
+            LlmRerank::Initialize, LlmRerank::Operation, LlmRerank::Combine, LlmRerank::Finalize, LlmRerank::ClusterUpdate,
             LlmRerank::Bind, LlmRerank::Destroy));
 }
 

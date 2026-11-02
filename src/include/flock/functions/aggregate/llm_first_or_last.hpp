@@ -26,6 +26,10 @@ public:
                           duckdb::Vector& states, idx_t count) {
         AggregateFunctionBase::Operation<LlmFirstOrLast>(inputs, aggr_input_data, input_count, states, count);
     }
+    static void ClusterUpdate(duckdb::Vector inputs[], duckdb::AggregateInputData& aggr_input_data, idx_t input_count,
+                              const duckdb::ClusteredAggr& clustered, idx_t count) {
+        AggregateFunctionBase::ClusterUpdate<LlmFirstOrLast>(inputs, aggr_input_data, input_count, clustered, count);
+    }
     static void Combine(duckdb::Vector& source, duckdb::Vector& target, duckdb::AggregateInputData& aggr_input_data,
                         idx_t count) {
         AggregateFunctionBase::Combine<LlmFirstOrLast>(source, target, aggr_input_data, count);

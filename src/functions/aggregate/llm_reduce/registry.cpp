@@ -8,7 +8,7 @@ void AggregateRegistry::RegisterLlmReduce(duckdb::ExtensionLoader& loader) {
             "llm_reduce", {duckdb::LogicalType::ANY, duckdb::LogicalType::ANY},
             duckdb::LogicalType::JSON(), duckdb::AggregateFunction::StateSize<AggregateFunctionState>,
             LlmReduce::Initialize, LlmReduce::Operation, LlmReduce::Combine,
-            LlmReduce::Finalize<AggregateFunctionType::REDUCE>, nullptr,
+            LlmReduce::Finalize<AggregateFunctionType::REDUCE>, LlmReduce::ClusterUpdate,
             LlmReduce::Bind, LlmReduce::Destroy));
 }
 

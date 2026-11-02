@@ -1,5 +1,6 @@
 #pragma once
 
+#include "duckdb/common/clustered_aggregate.hpp"
 #include "flock/core/common.hpp"
 #include "flock/functions/input_parser.hpp"
 #include "flock/functions/llm_function_bind_data.hpp"
@@ -109,6 +110,41 @@ public:
             if (state) {
                 state->Update(tuple);
             }
+        }
+    }
+
+    template<class Derived>
+    static void ClusterUpdate(duckdb::Vector inputs[], duckdb::AggregateInputData& aggr_input_data, idx_t input_count,
+                              const duckdb::ClusteredAggr& clustered, idx_t count) {
+        auto [prompt_details, columns] = CastInputsToJson(inputs, count);
+
+        for (const auto& run: clustered.runs()) {
+            auto state = reinterpret_cast<AggregateFunctionState*>(run.state);
+            if (!state) {
+                continue;
+            }
+            // A run without a selection covers rows [0, run.count)
+            if (!run.sel && run.count == count) {
+                state->Update(columns);
+                continue;
+            }
+
+            auto run_columns = nlohmann::json::array();
+            for (const auto& column: columns) {
+                auto run_column = nlohmann::json::object();
+                for (const auto& item: column.items()) {
+                    if (item.key() == "data") {
+                        auto& data = run_column[item.key()] = nlohmann::json::array();
+                        for (idx_t k = 0; k < run.count; k++) {
+                            data.push_back(item.value()[run.sel ? run.sel[k] : k]);
+                        }
+                    } else {
+                        run_column[item.key()] = item.value();
+                    }
+                }
+                run_columns.push_back(std::move(run_column));
+            }
+            state->Update(run_columns);
         }
     }
 
