@@ -13,6 +13,7 @@ project(${TARGET_NAME})
 
 # Include directories
 include_directories(src/include)
+include_directories(third_party/llm-cpp)
 add_subdirectory(src)
 
 # Find dependencies

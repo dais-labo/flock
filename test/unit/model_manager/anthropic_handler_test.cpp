@@ -189,4 +189,105 @@ TEST_F(AnthropicHandlerTest, MultipleContentBlocks) {
     EXPECT_EQ(response["content"][1]["type"], "text");
 }
 
+// Exposes the streaming reconstruction for testing (no request is sent)
+class AnthropicStreamProbe : public AnthropicModelManager {
+public:
+    AnthropicStreamProbe() : AnthropicModelManager("test-key", ANTHROPIC_DEFAULT_API_VERSION, true) {}
+    using AnthropicModelManager::ReconstructFromStreamedChunks;
+};
+
+static std::string StreamEvent(const std::string& event, const std::string& data, const std::string& eol = "\n") {
+    return "event: " + event + eol + "data: " + data + eol + eol;
+}
+
+static std::string TextStream(const std::string& eol = "\n") {
+    return StreamEvent("message_start", R"({"type":"message_start","message":{"id":"msg_1","usage":{"input_tokens":25,"output_tokens":1}}})", eol) +
+           StreamEvent("content_block_start", R"({"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}})", eol) +
+           StreamEvent("ping", R"({"type": "ping"})", eol) +
+           StreamEvent("content_block_delta", R"({"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"{\"items\": "}})", eol) +
+           StreamEvent("content_block_delta", R"({"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"[\"a\", \"b\"]}"}})", eol) +
+           StreamEvent("content_block_stop", R"({"type":"content_block_stop","index":0})", eol) +
+           StreamEvent("message_delta", R"({"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"output_tokens":12}})", eol) +
+           StreamEvent("message_stop", R"({"type":"message_stop"})", eol);
+}
+
+TEST_F(AnthropicHandlerTest, StreamedTextIsReconstructed) {
+    AnthropicStreamProbe probe;
+    auto result = probe.ReconstructFromStreamedChunks(TextStream());
+
+    ASSERT_TRUE(result.contains("content"));
+    ASSERT_EQ(result["content"].size(), 1);
+    EXPECT_EQ(result["content"][0]["type"], "text");
+    EXPECT_EQ(result["content"][0]["text"], "{\"items\": [\"a\", \"b\"]}");
+    EXPECT_EQ(result["stop_reason"], "end_turn");
+    EXPECT_EQ(result["usage"]["input_tokens"], 25);
+    EXPECT_EQ(result["usage"]["output_tokens"], 12);
+}
+
+TEST_F(AnthropicHandlerTest, StreamedTextLineEndingsAndFraming) {
+    AnthropicStreamProbe probe;
+    auto expected = probe.ReconstructFromStreamedChunks(TextStream());
+
+    // CRLF line endings
+    EXPECT_EQ(probe.ReconstructFromStreamedChunks(TextStream("\r\n")), expected);
+    // No space after the colon, plus a keep-alive comment
+    std::string compact = ": keep-alive\n" + TextStream();
+    for (const std::string field: {"event: ", "data: "}) {
+        for (size_t pos = compact.find(field); pos != std::string::npos; pos = compact.find(field, pos)) {
+            compact.erase(pos + field.size() - 1, 1);
+        }
+    }
+    EXPECT_EQ(probe.ReconstructFromStreamedChunks(compact), expected);
+    // Body ends without the blank line after message_stop
+    std::string unterminated = TextStream();
+    unterminated.resize(unterminated.size() - 1);
+    EXPECT_EQ(probe.ReconstructFromStreamedChunks(unterminated), expected);
+}
+
+TEST_F(AnthropicHandlerTest, StreamedToolUseIsReconstructed) {
+    AnthropicStreamProbe probe;
+    std::string sse =
+            StreamEvent("message_start", R"({"type":"message_start","message":{"usage":{"input_tokens":40}}})") +
+            StreamEvent("content_block_start", R"({"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"toolu_1","name":"flock_response","input":{}}})") +
+            StreamEvent("content_block_delta", R"({"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":""}})") +
+            StreamEvent("content_block_delta", R"({"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"{\"items\": "}})") +
+            StreamEvent("content_block_delta", R"({"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"\"only\"}"}})") +
+            StreamEvent("message_delta", R"({"type":"message_delta","delta":{"stop_reason":"tool_use"},"usage":{"output_tokens":7}})") +
+            StreamEvent("message_stop", R"({"type":"message_stop"})");
+    auto result = probe.ReconstructFromStreamedChunks(sse);
+
+    ASSERT_EQ(result["content"].size(), 1);
+    EXPECT_EQ(result["content"][0]["type"], "tool_use");
+    EXPECT_EQ(result["content"][0]["name"], "flock_response");
+    EXPECT_EQ(result["content"][0]["input"]["items"], json::array({"only"}));
+    EXPECT_EQ(result["stop_reason"], "tool_use");
+    EXPECT_EQ(result["usage"]["input_tokens"], 40);
+    EXPECT_EQ(result["usage"]["output_tokens"], 7);
+}
+
+TEST_F(AnthropicHandlerTest, StreamedThinkingIsSkipped) {
+    AnthropicStreamProbe probe;
+    std::string sse =
+            StreamEvent("content_block_delta", R"({"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"hmm"}})") +
+            StreamEvent("content_block_delta", R"({"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"answer"}})") +
+            StreamEvent("message_stop", R"({"type":"message_stop"})");
+    auto result = probe.ReconstructFromStreamedChunks(sse);
+
+    EXPECT_EQ(result["content"][0]["text"], "answer");
+    EXPECT_FALSE(result.contains("usage"));
+}
+
+TEST_F(AnthropicHandlerTest, StreamedErrorOrEmptyReturnsNull) {
+    AnthropicStreamProbe probe;
+    std::string error_sse =
+            StreamEvent("content_block_delta", R"({"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"partial"}})") +
+            StreamEvent("error", R"({"type":"error","error":{"type":"overloaded_error","message":"Overloaded"}})");
+    EXPECT_TRUE(probe.ReconstructFromStreamedChunks(error_sse).is_null());
+
+    EXPECT_TRUE(probe.ReconstructFromStreamedChunks("").is_null());
+    EXPECT_TRUE(probe.ReconstructFromStreamedChunks(StreamEvent("ping", R"({"type": "ping"})") +
+                                                    StreamEvent("message_stop", R"({"type":"message_stop"})"))
+                        .is_null());
+}
+
 }// namespace flock
