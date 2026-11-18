@@ -10,6 +10,12 @@
 #include <stdexcept>
 #include <string>
 
+// SSE parsing comes from llm-cpp (third_party/llm-cpp); only its parser, not its curl client.
+#ifndef LLM_STREAM_NO_CURL
+#define LLM_STREAM_NO_CURL
+#endif
+#include "llm_stream.hpp"
+
 namespace flock {
 
 class AnthropicModelManager : public BaseModelProviderHandler {
@@ -201,70 +207,57 @@ protected:
         int64_t output_tokens = 0;
         bool has_tool_use = false;
 
-        std::istringstream stream(sse_raw);
-        std::string line;
-        std::string current_event;
+        for (const auto& event: llm::parse_sse(sse_raw)) {
+            const std::string& current_event = event.event;
+            const std::string& json_str = event.data;
+            if (json_str.empty() || json_str[0] != '{') continue;
 
-        while (std::getline(stream, line)) {
-            // Trim
-            while (!line.empty() && (line.front() == ' ' || line.front() == '\t')) line.erase(line.begin());
-            while (!line.empty() && (line.back() == ' ' || line.back() == '\t' || line.back() == '\r')) line.pop_back();
+            nlohmann::json chunk;
+            try {
+                chunk = nlohmann::json::parse(json_str);
+            } catch (...) { continue; }
 
-            if (line.rfind("event: ", 0) == 0) {
-                current_event = line.substr(7);
-                continue;
+            if (chunk.contains("error")) return nlohmann::json();
+
+            // message_start: get input_tokens
+            if (current_event == "message_start" && chunk.contains("message")) {
+                const auto& msg = chunk["message"];
+                if (msg.contains("usage") && msg["usage"].is_object()) {
+                    const auto& usage = msg["usage"];
+                    if (usage.contains("input_tokens") && usage["input_tokens"].is_number()) {
+                        input_tokens = usage["input_tokens"].get<int64_t>();
+                    }
+                }
             }
-            if (line.rfind("data: ", 0) == 0) {
-                std::string json_str = line.substr(6);
-                if (json_str.empty() || json_str[0] != '{') continue;
 
-                nlohmann::json chunk;
-                try {
-                    chunk = nlohmann::json::parse(json_str);
-                } catch (...) { continue; }
-
-                if (chunk.contains("error")) return nlohmann::json();
-
-                // message_start: get input_tokens
-                if (current_event == "message_start" && chunk.contains("message")) {
-                    const auto& msg = chunk["message"];
-                    if (msg.contains("usage") && msg["usage"].is_object()) {
-                        const auto& usage = msg["usage"];
-                        if (usage.contains("input_tokens") && usage["input_tokens"].is_number()) {
-                            input_tokens = usage["input_tokens"].get<int64_t>();
-                        }
-                    }
+            // content_block_delta: accumulate text or tool input JSON
+            if (current_event == "content_block_delta" && chunk.contains("delta")) {
+                auto& delta = chunk["delta"];
+                // Text content from text_delta
+                if (delta.contains("text") && delta["text"].is_string()) {
+                    accumulated_content += delta["text"].get<std::string>();
                 }
-
-                // content_block_delta: accumulate text or tool input JSON
-                if (current_event == "content_block_delta" && chunk.contains("delta")) {
-                    auto& delta = chunk["delta"];
-                    // Text content from text_delta
-                    if (delta.contains("text") && delta["text"].is_string()) {
-                        accumulated_content += delta["text"].get<std::string>();
-                    }
-                    // Thinking content from thinking_delta (skip - it's reasoning, not the answer)
-                    if (delta.contains("type") && delta["type"] == "thinking_delta") {
-                        // Intentionally skip thinking content
-                    }
-                    // Tool call arguments from input_json_delta (streaming tool_use)
-                    if (delta.contains("type") && delta["type"] == "input_json_delta" && delta.contains("partial_json")) {
-                        has_tool_use = true;
-                        accumulated_input_json += delta["partial_json"].get<std::string>();
-                    }
+                // Thinking content from thinking_delta (skip - it's reasoning, not the answer)
+                if (delta.contains("type") && delta["type"] == "thinking_delta") {
+                    // Intentionally skip thinking content
                 }
+                // Tool call arguments from input_json_delta (streaming tool_use)
+                if (delta.contains("type") && delta["type"] == "input_json_delta" && delta.contains("partial_json")) {
+                    has_tool_use = true;
+                    accumulated_input_json += delta["partial_json"].get<std::string>();
+                }
+            }
 
-                // message_delta: get stop_reason and output_tokens
-                if (current_event == "message_delta") {
-                    if (chunk.contains("delta") && chunk["delta"].contains("stop_reason")) {
-                        auto& sr = chunk["delta"]["stop_reason"];
-                        if (sr.is_string()) finish_reason = sr.get<std::string>();
-                    }
-                    if (chunk.contains("usage") && chunk["usage"].is_object()) {
-                        const auto& usage = chunk["usage"];
-                        if (usage.contains("output_tokens") && usage["output_tokens"].is_number()) {
-                            output_tokens = usage["output_tokens"].get<int64_t>();
-                        }
+            // message_delta: get stop_reason and output_tokens
+            if (current_event == "message_delta") {
+                if (chunk.contains("delta") && chunk["delta"].contains("stop_reason")) {
+                    auto& sr = chunk["delta"]["stop_reason"];
+                    if (sr.is_string()) finish_reason = sr.get<std::string>();
+                }
+                if (chunk.contains("usage") && chunk["usage"].is_object()) {
+                    const auto& usage = chunk["usage"];
+                    if (usage.contains("output_tokens") && usage["output_tokens"].is_number()) {
+                        output_tokens = usage["output_tokens"].get<int64_t>();
                     }
                 }
             }
